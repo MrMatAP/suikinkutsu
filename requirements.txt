@@ -1,0 +1,16 @@
+#
+# IMPORTANT: The requirements that actually count are in setup.cfg. This file is here for convenience so you can
+#            quickly install both build- and test-requirements from within your development environment. DO MAKE
+#            SURE to update setup.cfg whenever you make changes here.
+
+# Build/Test requirements
+
+build~=0.7.0             # MIT
+wheel~=0.37.1            # MIT
+pylint~=2.12.2           # GPL-2.0-or-later
+pytest~=7.0.1            # MIT
+pytest-cov~=3.0.0        # MIT
+
+# Runtime requirements
+
+rich~=12.4.1             # MIT
