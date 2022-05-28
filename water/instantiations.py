@@ -20,17 +20,31 @@
 #  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 #  SOFTWARE.
 
-import os
-import importlib.metadata
-from rich.console import Console
-from .exceptions import MurkyWaterException
-from .instantiations import Volume, Instance
+from typing import List
+from datetime import datetime
+import dataclasses
 
-try:
-    __version__ = importlib.metadata.version('water')
-except importlib.metadata.PackageNotFoundError:
-    # You have not yet installed this as a package, likely because you're hacking on it in some IDE
-    __version__ = '0.0.0.dev0'
 
-__default_configuration__ = os.path.join(os.path.expanduser('~/.water'))
-console = Console()
+@dataclasses.dataclass
+class Volume:
+    name: str
+    scope: str
+    driver: str
+    labels: List[str]
+    mountpoint: str
+
+
+@dataclasses.dataclass
+class Instance:
+    name: str
+    id: str
+    image: str
+    platform: str
+    status: str
+    runtime: str
+    created: datetime
+    log_path: str
+    mounts: List[Volume]
+
+    def __init__(self, name: str):
+        self.name = name

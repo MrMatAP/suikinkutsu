@@ -26,16 +26,35 @@ import typing
 import argparse
 import inspect
 import configparser
-from water import __version__, __default_configuration__, console
+from typing import List, Dict, Any
+from rich.table import Table
+from rich.box import ROUNDED
+from water import __version__, __default_configuration__, MurkyWaterException, console
+from water.platforms import Platform, Nerdctl
+from water.blueprints import PostgreSQL
 
 
-def up(args: argparse.Namespace, config: configparser.ConfigParser) -> int:
+def output_table(title: str, columns: List[str], rows: List[Any]):
+    table = Table(title=title, box=ROUNDED)
+    for column in columns:
+        table.add_column(column)
+    for row in rows:
+        table.add_row(row)
+    console.print(table)
+
+
+def up(platform: Platform, config: configparser.ConfigParser, args: argparse.Namespace) -> int:
     console.print('Starting environment')
     return 0
 
 
-def down(args: argparse.Namespace, config: configparser.ConfigParser) -> int:
+def down(platform: Platform, config: configparser.ConfigParser, args: argparse.Namespace) -> int:
     console.print('Stopping environment')
+    return 0
+
+
+def instance_list(platform: Platform, config: configparser.ConfigParser, args: argparse.Namespace) -> int:
+    platform.instance_list()
     return 0
 
 
@@ -54,6 +73,11 @@ def main(args: typing.List) -> int:
                         required=False,
                         default=os.path.join(os.path.expanduser('~/.water')),
                         help='Configuration file')
+    parser.add_argument('-o', '--output',
+                        dest='output',
+                        choices=['table'],
+                        default='table',
+                        help='Output style')
     subparsers = parser.add_subparsers(dest='group')
 
     config_parser = subparsers.add_parser(name='config', help='Configuration Commands')
@@ -65,18 +89,27 @@ def main(args: typing.List) -> int:
     up_parser.set_defaults(cmd=up)
     down_parser = subparsers.add_parser('down', help='Stop cooking')
     down_parser.set_defaults(cmd=down)
+    list_parser = subparsers.add_parser(name='list', help='List')
+    list_parser.set_defaults(cmd=instance_list)
+
+    PostgreSQL.parser(subparsers)
 
     args = parser.parse_args(args)
     config = configparser.ConfigParser(strict=True)
     if args.config and os.path.exists(__default_configuration__):
         config.read(args.config)
 
-    if hasattr(args, 'cmd'):
-        # Do our thing
-        return args.cmd(config, args)() if inspect.isclass(args.cmd) else args.cmd(config, args)
-    else:
-        parser.print_help()
-    return 0
+    try:
+        if hasattr(args, 'cmd'):
+            platform = Nerdctl()
+            # Do our thing
+            return args.cmd(platform, config, args)() if inspect.isclass(args.cmd) else args.cmd(platform, config, args)
+        else:
+            parser.print_help()
+        return 0
+    except MurkyWaterException as mwe:
+        console.print_exception()
+        return mwe.code
 
 
 if __name__ == '__main__':
