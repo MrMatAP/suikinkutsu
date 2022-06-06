@@ -22,49 +22,44 @@
 
 import argparse
 from typing import Dict, List
-import configparser
+import secrets
 
-from water.blueprints.blueprint import Blueprint
+from water import console
+from water.blueprints.blueprint import Blueprint, BlueprintSchema
 
 
 class PostgreSQL(Blueprint):
 
-    blueprint: 'water.models.Blueprint'
-    defaults: 'water.models.Blueprint'
+    name: str = 'postgres'
+    kind: str = 'postgres'
+    description: str = 'PostgreSQL is a modern relational database'
 
-    name: str = 'pg'
-    container: str = 'postgres:14.3-alpine'
+    image: str = 'postgres:14.3-alpine'
     volumes: Dict[str, str] = {
-        'pgdata': '/var/lib/postgresql/data/pgdata'
+        'pg_datavol': '/var/lib/postgresql/data',
     }
     environment: Dict[str, str] = {
         'POSTGRES_DB': 'localdb',
-        'POSTGRES_PASSWORD': 'foobar',
+        'POSTGRES_PASSWORD': secrets.token_urlsafe(16),
         'PGDATA': '/var/lib/postgresql/data/pgdata'
-        #'PGDATA': '/var/lib/postgresql/local'
     }
-    ports: Dict[str, str] = {
-        '127.0.0.1:5432': '5432'
-    }
-    labels: Dict[str, str] = {
-        'org.mrmat.water.blueprint': 'PostgreSQL'
-    }
+    ports: Dict[str, str] = {'127.0.0.1:5432': '5432'}
 
     @classmethod
-    def parser(cls, parser):
+    def cli(cls, parser):
         pg_parser = parser.add_parser(name='pg', help='PostgreSQL Commands')
         pg_subparser = pg_parser.add_subparsers()
         pg_create_parser = pg_subparser.add_parser(name='create', help='Create a PostgreSQL instance')
-        pg_create_parser.set_defaults(cmd=PostgreSQL.create)
+        pg_create_parser.set_defaults(cmd=cls.pg_create)
         pg_create_parser.add_argument('-n', '--instance-name',
                                       dest='name',
-                                      default=PostgreSQL.name,
+                                      default=cls.name,
                                       required=False,
                                       help='Instance name')
         pg_list_parser = pg_subparser.add_parser(name='list', help='List PostgreSQL instances')
-        pg_list_parser.set_defaults(cmd=PostgreSQL.list)
+        pg_list_parser.set_defaults(cmd=cls.pg_list)
         pg_remove_parser = pg_subparser.add_parser(name='remove', help='Remove PostgreSQL instances')
-        pg_remove_parser.set_defaults(cmd=PostgreSQL.remove)
+        pg_remove_parser.set_defaults(cmd=cls.pg_remove)
         pg_remove_parser.add_argument('-n', '--instance-name',
                                       dest='name',
                                       required=True,
@@ -80,34 +75,27 @@ class PostgreSQL(Blueprint):
                                            dest='account_name',
                                            required=True,
                                            help='Account name')
-        pg_account_add_parser.set_defaults(cmd=PostgreSQL.account_add)
+        pg_account_add_parser.set_defaults(cmd=cls.pg_account_add)
 
     @classmethod
-    def account_add(cls,
-               platform: 'water.platforms.Platform',
-               config: configparser.ConfigParser,
-               args: argparse.Namespace) -> 'water.models.service.Instance':
+    def pg_account_add(cls, runtime, args):
         pass
 
     @classmethod
-    def create(cls,
-               platform: 'water.platforms.Platform',
-               config: configparser.ConfigParser,
-               args: argparse.Namespace) -> 'water.models.service.Instance':
-        blueprint = PostgreSQL(name=args.name)
-        return platform.service_create(blueprint=blueprint)
+    def pg_create(cls, runtime, args: argparse.Namespace):
+        instance = cls()
+        instance.name = args.name
+        instance.create(runtime, args)
 
     @classmethod
-    def list(cls,
-             platform: 'water.platforms.Platform',
-             config: configparser.ConfigParser,
-             args: argparse.Namespace) -> List['water.models.Instance']:
-        pass
+    def pg_list(cls, runtime, args: argparse.Namespace):
+        instance = cls()
+        instance.name = args.name
+        instance.list(runtime, args)
 
     @classmethod
-    def remove(cls,
-               platform: 'water.platforms.Platform',
-               config: configparser.ConfigParser,
-               args: argparse.Namespace):
-        blueprint = PostgreSQL(name=args.name)
-        platform.service_remove(blueprint=blueprint)
+    def pg_remove(cls, runtime, args: argparse.Namespace):
+        instance = cls()
+        instance.name = args.name
+        instance.remove(runtime, args)
+

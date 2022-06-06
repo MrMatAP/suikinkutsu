@@ -1,6 +1,5 @@
 blueprints:
     pg:
         kind: postgres
-        container: postgres:14.3-alpine
     kc:
         kind: keycloak

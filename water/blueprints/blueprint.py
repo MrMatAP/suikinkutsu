@@ -22,46 +22,64 @@
 
 import argparse
 import abc
-from typing import Dict, List
-import configparser
+from typing import Dict, List, Optional
+from rich.table import Table
+from rich.box import ROUNDED
+from water import console, __LABEL_BLUEPRINT__
+from pydantic import BaseModel
+
+class BlueprintSchema(BaseModel):
+    kind: str
+    image: Optional[str]
+    labels: Optional[Dict[str, str]]
+    volumes: Optional[Dict[str, str]]
+    environment: Optional[Dict[str, str]]
+    ports: Optional[Dict[str, str]]
+
+
+class RecipeSchema(BaseModel):
+    blueprints: Dict[str, BlueprintSchema]
 
 
 class Blueprint(abc.ABC):
-    name: str
-    container: str
-    volumes: Dict[str, str]
-    environment: Dict[str, str]
-    ports: Dict[str, str]
-    labels: Dict[str, str]
 
-    def __init__(self, name: str):
-        self.name = name
+    name: str = "base"
+    kind: str = 'base'
+    description: str = "An abstract base blueprint"
+    image: str = ""
+    volumes: Dict[str, str] = {}
+    environment: Dict[str, str] = {}
+    ports: Dict[str, str] = {}
+    labels: Dict[str, str] = {}
 
     @classmethod
-    @abc.abstractmethod
-    def parser(cls, parser):
+    def cli(cls, parser):
         pass
 
     @classmethod
-    @abc.abstractmethod
-    def create(cls,
-               platform: 'water.platforms.Platform',
-               config: configparser.ConfigParser,
-               args: argparse.Namespace) -> 'water.models.Instance':
-        pass
+    def from_schema(cls, runtime, name, schema):
+        instance = cls()
+        instance.name = name
+        instance.image = schema.image or instance.image
+        instance.labels.update({__LABEL_BLUEPRINT__: cls})
+        return instance
 
     @classmethod
-    @abc.abstractmethod
-    def list(cls,
-             platform: 'water.platforms.Platform',
-             config: configparser.ConfigParser,
-             args: argparse.Namespace) -> List['water.models.Instance']:
-        pass
+    def blueprint_list(cls, runtime, args: argparse.Namespace):
+        table = Table(title='Available Blueprints', box=ROUNDED)
+        table.add_column('Blueprint')
+        table.add_column('Description')
+        [table.add_row(name, bp.description) for name, bp in runtime.available_blueprints.items()]
+        console.print(table)
 
-    @classmethod
-    @abc.abstractmethod
-    def remove(cls,
-               platform: 'water.platforms.Platform',
-               config: configparser.ConfigParser,
-               args: argparse.Namespace) -> 'water.models.Instance':
-        pass
+    def create(self, runtime, args: argparse.Namespace):
+        service = runtime.default_platform.service_create(blueprint=self)
+        console.print(f'Service {self.name} of kind {self.kind} created')
+        return service
+
+    def list(self, runtime, args: argparse.Namespace):
+        console.print(f'Listing services of kind {self.kind}')
+
+    def remove(self, runtime, args: argparse.Namespace):
+        runtime.default_platform.service_remove(blueprint=self)
+        console.print(f'Service {self.name} of kind {self.kind} removed')

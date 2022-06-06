@@ -20,6 +20,5 @@
 #  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 #  SOFTWARE.
 
-from water.models.volume import Volume
-from water.models.instance import Instance
-from water.models.recipe import Recipe, Blueprint
+from water.schema.volume import Volume
+from water.schema.instance import Instance

@@ -21,16 +21,18 @@
 #  SOFTWARE.
 
 import argparse
-from typing import Dict, List
-import configparser
+from typing import Dict
 
+from water import console
 from water.blueprints.blueprint import Blueprint
 
 
 class Keycloak(Blueprint):
 
     name: str = 'keycloak'
-    container: str = 'jboss/keycloak:16.1.1'
+    kind: str = 'keycloak'
+    description: str = 'Keycloak is an Identity Provider implementing OAuth 2 and SAML authentication/authorisation'
+    image: str = 'jboss/keycloak:16.1.1'
     volumes: Dict[str, str] = {
         'import': '/import'
     }
@@ -52,43 +54,49 @@ class Keycloak(Blueprint):
     }
 
     @classmethod
-    def parser(cls, parser: argparse.ArgumentParser):
+    def cli(cls, parser):
         kc_parser = parser.add_parser(name='keycloak', help='Keycloak Commands')
         kc_subparser = kc_parser.add_subparsers()
         kc_create_parser = kc_subparser.add_parser(name='create', help='Create a Keycloak instance')
-        kc_create_parser.set_defaults(cmd=Keycloak.create)
+        kc_create_parser.set_defaults(cmd=cls.kc_create)
         kc_create_parser.add_argument('-n', '--name',
                                       dest='name',
-                                      default=Keycloak.name,
+                                      default=cls.name,
                                       required=False,
                                       help='Instance name')
         kc_list_parser = kc_subparser.add_parser(name='list', help='List all keycloak instances')
-        kc_list_parser.set_defaults(cmd=Keycloak.list)
+        kc_list_parser.set_defaults(cmd=cls.kc_list)
         kc_remove_parser = kc_subparser.add_parser(name='remove', help='Remove Keycloak instances')
-        kc_remove_parser.set_defaults(cmd=Keycloak.remove)
+        kc_remove_parser.set_defaults(cmd=cls.kc_remove)
         kc_remove_parser.add_argument('-n', '--name',
                                       dest='name',
-                                      default=Keycloak.name,
+                                      default=cls.name,
                                       required=False,
                                       help='Instance name')
 
     @classmethod
-    def create(cls,
-               platform: 'water.platforms.Platform',
-               config: configparser.ConfigParser,
-               args: argparse.Namespace) -> 'water.models.service.Instance':
-        pass
+    def kc_create(cls, runtime, args):
+        instance = cls()
+        instance.name = args.name
+        instance.create(runtime, args)
 
     @classmethod
-    def list(cls,
-             platform: 'water.platforms.Platform',
-             config: configparser.ConfigParser,
-             args: argparse.Namespace) -> List['water.models.Instance']:
-        pass
+    def kc_list(cls, runtime, args):
+        instance = cls()
+        instance.name = args.name
+        instance.list(runtime, args)
 
     @classmethod
-    def remove(cls,
-               platform: 'water.platforms.Platform',
-               config: configparser.ConfigParser,
-               args: argparse.Namespace) -> 'water.models.service.Instance':
+    def kc_remove(cls, runtime, args):
+        instance = cls()
+        instance.name = args.name
+        instance.remove(runtime, args)
+
+    def create(self, runtime, args: argparse.Namespace):
+        pass
+
+    def list(self, runtime, args: argparse.Namespace):
+        pass
+
+    def remove(self, runtime, args: argparse.Namespace):
         pass
