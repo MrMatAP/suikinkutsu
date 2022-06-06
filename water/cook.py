@@ -29,9 +29,10 @@ import configparser
 from typing import List, Dict, Any
 from rich.table import Table
 from rich.box import ROUNDED
+import yaml
 from water import __version__, __default_configuration__, MurkyWaterException, console
-from water.platforms import Platform, Nerdctl
-from water.blueprints import PostgreSQL
+import water.blueprints
+import water.platforms
 
 
 def output_table(title: str, columns: List[str], rows: List[Any]):
@@ -43,26 +44,34 @@ def output_table(title: str, columns: List[str], rows: List[Any]):
     console.print(table)
 
 
-def up(platform: Platform, config: configparser.ConfigParser, args: argparse.Namespace) -> int:
-    console.print('Starting environment')
-    return 0
+def up(platform: water.platforms.Platform, config: configparser.ConfigParser, args: argparse.Namespace) -> int:
+    if not os.path.exists(args.recipe):
+        console.print(f'There is no recipe at {args.recipe}')
+        return 1
+    try:
+        with open(args.recipe, 'r', encoding='UTF-8') as r:
+            raw_recipe = yaml.safe_load(r)
+        parsed_recipe = water.models.Recipe.parse_obj(raw_recipe)
+        console.print(parsed_recipe)
+    except Exception as e:
+        console.print_exception()
 
 
-def down(platform: Platform, config: configparser.ConfigParser, args: argparse.Namespace) -> int:
+def down(platform: water.platforms.Platform, config: configparser.ConfigParser, args: argparse.Namespace) -> int:
     console.print('Stopping environment')
     return 0
 
 
-def instance_list(platform: Platform, config: configparser.ConfigParser, args: argparse.Namespace) -> int:
-    platform.instance_list()
+def instance_list(platform: water.platforms.Platform, config: configparser.ConfigParser, args: argparse.Namespace) -> int:
+    platform.service_list()
     return 0
 
 
-def main(args: typing.List) -> int:
+def main(argv: typing.List) -> int:
     """
     Main entry point for the cook CLI
     Args:
-        args: Command line arguments
+        argv: Command line arguments
 
     Returns:
         An exit code. 0 when successful, non-zero otherwise
@@ -85,23 +94,35 @@ def main(args: typing.List) -> int:
     config_show_parser = config_subparser.add_parser(name='show', help='Show current configuration')
     config_set_parser = config_subparser.add_parser(name='set', help='Set configuration')
 
+    pf_parser = subparsers.add_parser(name='platform', help='Platform Commands')
+    pf_subparser = pf_parser.add_subparsers()
+    pf_list_parser = pf_subparser.add_parser('list', help='List platforms')
+    pf_list_parser.set_defaults(cmd=water.platforms.Platform.list)
+
     up_parser = subparsers.add_parser(name='up', help='Start cooking')
+    up_parser.add_argument('-r', '--recipe',
+                           dest='recipe',
+                           required=False,
+                           default=os.path.join(os.path.curdir, 'Recipe'),
+                           help='The recipe to instantiate')
     up_parser.set_defaults(cmd=up)
     down_parser = subparsers.add_parser('down', help='Stop cooking')
     down_parser.set_defaults(cmd=down)
     list_parser = subparsers.add_parser(name='list', help='List')
     list_parser.set_defaults(cmd=instance_list)
 
-    PostgreSQL.parser(subparsers)
+    for blueprint_class in water.blueprints.Blueprint.__subclasses__():
+        blueprint_class.parser(subparsers)
 
-    args = parser.parse_args(args)
+    args = parser.parse_args(argv)
     config = configparser.ConfigParser(strict=True)
     if args.config and os.path.exists(__default_configuration__):
         config.read(args.config)
 
     try:
         if hasattr(args, 'cmd'):
-            platform = Nerdctl()
+            # TODO: hardcoded default
+            platform = water.platforms.nerdctl.Nerdctl()
             # Do our thing
             return args.cmd(platform, config, args)() if inspect.isclass(args.cmd) else args.cmd(platform, config, args)
         else:

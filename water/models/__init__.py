@@ -20,8 +20,6 @@
 #  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 #  SOFTWARE.
 
-from water.capabilities import Capability
-
-
-class RelationalDatabase(Capability):
-    pass
+from water.models.volume import Volume
+from water.models.instance import Instance
+from water.models.recipe import Recipe, Blueprint

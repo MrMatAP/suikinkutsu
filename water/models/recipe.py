@@ -20,5 +20,25 @@
 #  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 #  SOFTWARE.
 
-from .platform import Platform
-import water.platforms.nerdctl
+from typing import Optional, List, Dict
+from pydantic import BaseModel
+
+
+class Blueprint(BaseModel):
+    kind: str
+    container: Optional[str]
+    labels: Optional[Dict[str, str]]
+    volumes: Optional[Dict[str, str]]
+    environment: Optional[Dict[str, str]]
+    ports: Optional[Dict[str, str]]
+
+    def merge_defaults(self, defaults: 'Blueprint'):
+        container = self.container or defaults.container
+        labels = self.labels or defaults.labels
+        volumes = self.volumes or defaults.labels
+        environment = self.environment or defaults.environment
+        ports = self.ports or defaults.ports
+
+
+class Recipe(BaseModel):
+    blueprints: Dict[str, Blueprint]

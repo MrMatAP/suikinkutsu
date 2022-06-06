@@ -23,7 +23,9 @@
 from typing import List
 import abc
 import subprocess
-from water import MurkyWaterException, Volume, Instance
+import argparse
+import configparser
+from water import MurkyWaterException, console
 
 
 class Platform(abc.ABC):
@@ -32,11 +34,11 @@ class Platform(abc.ABC):
     executable: str = None
 
     @abc.abstractmethod
-    def volume_create(self, name: str) -> Volume:
+    def volume_create(self, name: str) -> 'water.models.Volume':
         pass
 
     @abc.abstractmethod
-    def volume_list(self) -> List[Volume]:
+    def volume_list(self) -> List['water.models.Volume']:
         pass
 
     @abc.abstractmethod
@@ -44,16 +46,34 @@ class Platform(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def instance_create(self, blueprint) -> Instance:
+    def service_create(self, blueprint: 'water.blueprints.Blueprint') -> 'water.models.Instance':
         pass
 
     @abc.abstractmethod
-    def instance_list(self) -> List[Instance]:
+    def service_list(self) -> List['water.models.Instance']:
         pass
 
     @abc.abstractmethod
-    def instance_remove(self, blueprint):
+    def service_show(self, blueprint: 'water.blueprints.Blueprint') -> 'water.models.Instance':
         pass
+
+    @abc.abstractmethod
+    def service_remove(self, blueprint: 'water.blueprints.Blueprint'):
+        pass
+
+    @classmethod
+    @abc.abstractmethod
+    def available(cls) -> bool:
+        pass
+
+    @classmethod
+    def list(cls,
+               platform: 'water.platforms.Platform',
+               config: configparser.ConfigParser,
+               args: argparse.Namespace):
+        known_platforms = Platform.__subclasses__()
+        for platform in known_platforms:
+            console.print(platform.__name__)
 
     def execute(self, args: List[str]) -> subprocess.CompletedProcess:
         if not self.executable:

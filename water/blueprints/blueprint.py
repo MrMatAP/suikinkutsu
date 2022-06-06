@@ -22,9 +22,8 @@
 
 import argparse
 import abc
-from typing import Dict
+from typing import Dict, List
 import configparser
-from water.platforms import Platform
 
 
 class Blueprint(abc.ABC):
@@ -38,17 +37,31 @@ class Blueprint(abc.ABC):
     def __init__(self, name: str):
         self.name = name
 
-    @staticmethod
+    @classmethod
     @abc.abstractmethod
-    def parser(parser: argparse.ArgumentParser):
+    def parser(cls, parser):
         pass
 
-    @staticmethod
+    @classmethod
     @abc.abstractmethod
-    def create(platform: Platform, config: configparser.ConfigParser, args: argparse.Namespace):
+    def create(cls,
+               platform: 'water.platforms.Platform',
+               config: configparser.ConfigParser,
+               args: argparse.Namespace) -> 'water.models.Instance':
         pass
 
-    @staticmethod
+    @classmethod
     @abc.abstractmethod
-    def remove(platform: Platform, config: configparser.ConfigParser, args: argparse.Namespace):
+    def list(cls,
+             platform: 'water.platforms.Platform',
+             config: configparser.ConfigParser,
+             args: argparse.Namespace) -> List['water.models.Instance']:
+        pass
+
+    @classmethod
+    @abc.abstractmethod
+    def remove(cls,
+               platform: 'water.platforms.Platform',
+               config: configparser.ConfigParser,
+               args: argparse.Namespace) -> 'water.models.Instance':
         pass

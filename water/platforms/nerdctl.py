@@ -23,43 +23,51 @@
 from typing import List
 import shutil
 import json
-from rich.table import Table
 
-from water import MurkyWaterException, console, Volume, Instance
-from water.platforms import Platform
-from water.blueprints import Blueprint
+from water import console
+from water.platforms.platform import Platform
+import water.models
 
 
 class Nerdctl(Platform):
     executable_name = 'nerdctl'
 
     def __init__(self):
-        self.executable = shutil.which(self.executable_name)
+        Nerdctl.available()
 
-    def volume_create(self, name: str) -> Volume:
+    @classmethod
+    def available(cls) -> bool:
+        cls.executable = shutil.which(cls.executable_name)
+        if cls.executable:
+            return True
+        return False
+
+    def volume_create(self, name: str) -> water.models.Volume:
         self.execute(['volume', 'create',
                       '--label', 'org.mrmat.created-by=water',
                       name])
+        info = self.execute(['volume', 'inspect', name])
+
         console.print(f'Volume {name} successfully created')
 
-    def volume_list(self) -> List[Volume]:
+    def volume_list(self) -> List['water.models.volume.Volume']:
         result = self.execute(['volume', 'ls', '--format', '{{ json . }}'])
         raw_volumes = [e for e in result.stdout.split('\n') if e.startswith('{')]
         result = []
         for raw_volume in raw_volumes:
             json_volume = json.loads(raw_volume)
-            result.append(Volume(name=json_volume['Name'],
-                                 scope=json_volume['Scope'],
-                                 driver=json_volume['Driver'],
-                                 labels=json_volume['Labels'],
-                                 mountpoint=json_volume['Mountpoint']))
+            result.append(water.models.Volume(name=json_volume['Name'],
+                                              scope=json_volume['Scope'],
+                                              driver=json_volume['Driver'],
+                                              labels=json_volume['Labels'],
+                                              mountpoint=json_volume['Mountpoint']))
         return result
 
     def volume_remove(self, name: str):
         self.execute(['volume', 'rm', name])
         console.print(f'Volume {name} successfully removed')
 
-    def instance_create(self, blueprint: Blueprint) -> Instance:
+    def service_create(self, blueprint: 'water.blueprints.Blueprint') -> water.models.Instance:
         cmd = ['container', 'run', '-d', '--name', blueprint.name]
         for label, value in blueprint.labels.items():
             cmd.extend(['--label', f'{label}={value}'])
@@ -74,15 +82,15 @@ class Nerdctl(Platform):
         self.execute(cmd)
         console.print(f'Instance {blueprint.name} successfully created')
 
-    def instance_list(self) -> List[Instance]:
+    def service_list(self) -> List['water.models.Instance']:
         result = self.execute(['container', 'ls', '--format', '{{ json . }}'])
         raw_instances = [json.loads(e) for e in result.stdout.split('\n') if e.startswith('{')]
         for raw_instance in raw_instances:
             result = self.execute(['container', 'inspect', raw_instance['ID']])
             raw_instance['inspection'] = json.loads(result.stdout)
-        return [Instance(i) for i in raw_instances]
+        return [water.models.Instance(i) for i in raw_instances]
 
-        #table = Table(title='Instances')
+        # table = Table(title='Instances')
         # for column in ['Name', 'Scope', 'Driver', 'Labels', 'Mountpoint']:
         #     table.add_column(column)
         # for vol in volumes:
@@ -90,6 +98,11 @@ class Nerdctl(Platform):
         #     table.add_row(row['Name'], row['Scope'], row['Driver'], row['Labels'], row['Mountpoint'])
         # console.print(table)
 
-    def instance_remove(self, blueprint: Blueprint):
+    def service_show(self, blueprint: 'water.blueprints.Blueprint') -> 'water.models.Instance':
+        pass
+
+    def service_remove(self, blueprint: 'water.blueprints.Blueprint'):
         result = self.execute(['container', 'stop', blueprint.name])
         result = self.execute(['container', 'rm', blueprint.name])
+        for volume in blueprint.volumes:
+            result = self.execute(['volume', 'rm', volume])

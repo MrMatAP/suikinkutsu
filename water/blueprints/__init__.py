@@ -21,7 +21,5 @@
 #  SOFTWARE.
 
 from .blueprint import Blueprint
-from .postgres import PostgreSQL
-
-
-
+import water.blueprints.postgres
+import water.blueprints.keycloak

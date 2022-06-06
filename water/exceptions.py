@@ -22,9 +22,13 @@
 
 from typing import Optional
 
+
 class MurkyWaterException(Exception):
 
     def __init__(self, msg: str, code: Optional[int] = 1, command: Optional[str] = None):
         self.code = code
         self.msg = msg
         self.command = command
+
+    def __repr__(self):
+        return f'[{self.code}] {self.msg}'

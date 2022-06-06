@@ -20,7 +20,21 @@
 #  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 #  SOFTWARE.
 
-import abc
+from typing import List
+from datetime import datetime
+import dataclasses
 
-class Capability(abc.ABC):
-    pass
+from .volume import Volume
+
+
+@dataclasses.dataclass
+class Instance:
+    name: str
+    id: str
+    image: str
+    platform: str
+    status: str
+    runtime: str
+    created: datetime
+    log_path: str
+    mounts: List[Volume]
