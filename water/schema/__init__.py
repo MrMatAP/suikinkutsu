@@ -20,7 +20,5 @@
 #  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 #  SOFTWARE.
 
-import abc
-
-class Capability(abc.ABC):
-    pass
+from water.schema.volume import Volume
+from water.schema.instance import Instance

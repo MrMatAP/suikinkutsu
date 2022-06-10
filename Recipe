@@ -1,0 +1,5 @@
+blueprints:
+    pg:
+        kind: postgres
+    kc:
+        kind: keycloak

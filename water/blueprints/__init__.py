@@ -20,8 +20,6 @@
 #  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 #  SOFTWARE.
 
-from .blueprint import Blueprint
-from .postgres import PostgreSQL
-
-
-
+from .blueprint import Blueprint, BlueprintSchema, RecipeSchema
+import water.blueprints.postgres
+import water.blueprints.keycloak

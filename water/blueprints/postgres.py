@@ -19,67 +19,83 @@
 #  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 #  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 #  SOFTWARE.
-import argparse
-from typing import Dict
-import configparser
 
-from platforms import Platform
-from water.blueprints import Blueprint
+import argparse
+from typing import Dict, List
+import secrets
+
+from water import console
+from water.blueprints.blueprint import Blueprint, BlueprintSchema
 
 
 class PostgreSQL(Blueprint):
 
-    name: str = 'pg'
-    container: str = 'postgres:14.3-alpine'
+    name: str = 'postgres'
+    kind: str = 'postgres'
+    description: str = 'PostgreSQL is a modern relational database'
+
+    image: str = 'postgres:14.3-alpine'
     volumes: Dict[str, str] = {
-        'pgdata': '/var/lib/postgresql/data/pgdata'
+        'pg_datavol': '/var/lib/postgresql/data',
     }
     environment: Dict[str, str] = {
         'POSTGRES_DB': 'localdb',
-        'POSTGRES_PASSWORD': 'foobar',
+        'POSTGRES_PASSWORD': secrets.token_urlsafe(16),
         'PGDATA': '/var/lib/postgresql/data/pgdata'
-        #'PGDATA': '/var/lib/postgresql/local'
     }
-    ports: Dict[str, str] = {
-        '127.0.0.1:5432': '5432'
-    }
-    labels: Dict[str, str] = {
-        'org.mrmat.water.blueprint': 'PostgreSQL'
-    }
+    ports: Dict[str, str] = {'127.0.0.1:5432': '5432'}
 
-    @staticmethod
-    def parser(subparsers):
-        pg_parser = subparsers.add_parser(name='pg', help='PostgreSQL Commands')
+    @classmethod
+    def cli(cls, parser):
+        pg_parser = parser.add_parser(name='pg', help='PostgreSQL Commands')
         pg_subparser = pg_parser.add_subparsers()
         pg_create_parser = pg_subparser.add_parser(name='create', help='Create a PostgreSQL instance')
-        pg_create_parser.set_defaults(cmd=PostgreSQL.create)
-        pg_create_parser.add_argument('-n', '--name',
+        pg_create_parser.set_defaults(cmd=cls.pg_create)
+        pg_create_parser.add_argument('-n', '--instance-name',
                                       dest='name',
-                                      default=PostgreSQL.name,
+                                      default=cls.name,
                                       required=False,
                                       help='Instance name')
         pg_list_parser = pg_subparser.add_parser(name='list', help='List PostgreSQL instances')
-        pg_list_parser.set_defaults(cmd=PostgreSQL.list)
+        pg_list_parser.set_defaults(cmd=cls.pg_list)
         pg_remove_parser = pg_subparser.add_parser(name='remove', help='Remove PostgreSQL instances')
-        pg_remove_parser.set_defaults(cmd=PostgreSQL.remove)
-        pg_remove_parser.add_argument('-n', '--name',
+        pg_remove_parser.set_defaults(cmd=cls.pg_remove)
+        pg_remove_parser.add_argument('-n', '--instance-name',
                                       dest='name',
-                                      default=PostgreSQL.name,
-                                      required=False,
+                                      required=True,
                                       help='Instance name')
+        pg_account_parser = pg_subparser.add_parser(name='account', help='PostgreSQL Account Commands')
+        pg_account_subparser = pg_account_parser.add_subparsers()
+        pg_account_add_parser = pg_account_subparser.add_parser(name='add', help='Add an account')
+        pg_account_add_parser.add_argument('-n', '--instance-name',
+                                           dest='name',
+                                           required=True,
+                                           help='Instance name')
+        pg_account_add_parser.add_argument('-a', '--account-name',
+                                           dest='account_name',
+                                           required=True,
+                                           help='Account name')
+        pg_account_add_parser.set_defaults(cmd=cls.pg_account_add)
 
-    @staticmethod
-    def create(platform: Platform, config: configparser.ConfigParser, args: argparse.Namespace):
-        instance = PostgreSQL(name=args.name)
-        platform.instance_create(blueprint=instance)
-        return 0
+    @classmethod
+    def pg_account_add(cls, runtime, args):
+        pass
 
-    @staticmethod
-    def list(platform: Platform, config: configparser.ConfigParser, args: argparse.Namespace):
-        platform.volume_list()
+    @classmethod
+    def pg_create(cls, runtime, args: argparse.Namespace):
+        instance = cls()
+        instance.name = args.name
+        instance.create(runtime, args)
 
-    @staticmethod
-    def remove(platform: Platform, config: configparser.ConfigParser, args: argparse.Namespace):
-        instance = PostgreSQL(name=args.name)
-        platform.volume_remove(instance.name)
-        return 0
+    @classmethod
+    def pg_list(cls, runtime, args: argparse.Namespace):
+        instance = cls()
+        instance.name = args.name
+        instance.list(runtime, args)
+
+    @classmethod
+    def pg_remove(cls, runtime, args: argparse.Namespace):
+        instance = cls()
+        instance.name = args.name
+        instance.remove(runtime, args)
+

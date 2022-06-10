@@ -20,8 +20,21 @@
 #  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 #  SOFTWARE.
 
-from water.capabilities import Capability
+from typing import List
+from datetime import datetime
+import dataclasses
+
+from .volume import Volume
 
 
-class RelationalDatabase(Capability):
-    pass
+@dataclasses.dataclass
+class Instance:
+    name: str
+    id: str
+    image: str
+    platform: str
+    status: str
+    runtime: str
+    created: datetime
+    log_path: str
+    mounts: List[Volume]

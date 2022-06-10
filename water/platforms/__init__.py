@@ -21,4 +21,4 @@
 #  SOFTWARE.
 
 from .platform import Platform
-from .nerdctl import Nerdctl
+import water.platforms.nerdctl

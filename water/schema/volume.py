@@ -20,8 +20,7 @@
 #  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 #  SOFTWARE.
 
-from typing import List
-from datetime import datetime
+from typing import List, Dict
 import dataclasses
 
 
@@ -33,18 +32,9 @@ class Volume:
     labels: List[str]
     mountpoint: str
 
+    @classmethod
+    def from_inspection(cls, data: Dict):
+        pass
 
-@dataclasses.dataclass
-class Instance:
-    name: str
-    id: str
-    image: str
-    platform: str
-    status: str
-    runtime: str
-    created: datetime
-    log_path: str
-    mounts: List[Volume]
 
-    def __init__(self, name: str):
-        self.name = name
+
