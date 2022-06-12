@@ -61,7 +61,7 @@ class Platform(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def service_list(self, name: Optional[str]):
+    def service_list(self, name: Optional[str] = None):
         pass
 
     @abc.abstractmethod

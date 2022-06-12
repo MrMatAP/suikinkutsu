@@ -20,6 +20,37 @@
 #  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 #  SOFTWARE.
 
-from .platform import Platform
-import water.platforms.docker
-import water.platforms.nerdctl
+from water import console
+from water.outputs.output import Output
+from rich.tree import Tree
+from rich.table import Table
+from rich.box import ROUNDED
+
+
+class DefaultOutput(Output):
+
+    name: str = 'default'
+
+    def exception(self, ex: Exception):
+        console.print_exception()
+
+    def config(self, runtime):
+        table = Table(title='Configuration', box=ROUNDED)
+        table.add_column('Key')
+        table.add_column('Value')
+        table.add_column('Source')
+        table.add_row('config_file', runtime.config_file, runtime.config_file_source)
+        table.add_row('config_dir', runtime.config_dir, runtime.config_dir_source)
+        table.add_row('output', runtime.output.name, runtime.output_source)
+        console.print(table)
+
+    def info(self, msg: str):
+        console.print(msg)
+
+    def warning(self, msg: str):
+        console.print(f'[bold yellow]Warning:[/bold yellow] {msg}')
+
+    def error(self, msg: str):
+        console.print(f'[bold red]Error:[/bold red] {msg}')
+
+

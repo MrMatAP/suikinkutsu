@@ -22,11 +22,12 @@
 
 import argparse
 import abc
-from typing import Dict, List, Optional
+from typing import Dict, Optional
 from rich.table import Table
 from rich.box import ROUNDED
-from water import console, __LABEL_BLUEPRINT__
+from water import console, LABEL_BLUEPRINT
 from pydantic import BaseModel
+
 
 class BlueprintSchema(BaseModel):
     kind: str
@@ -52,6 +53,10 @@ class Blueprint(abc.ABC):
     ports: Dict[str, str] = {}
     labels: Dict[str, str] = {}
 
+    def __init__(self):
+        self.labels[LABEL_BLUEPRINT] = self.__class__.name
+        self.labels['org.mrmat.test'] = 'foo'
+
     @classmethod
     def cli(cls, parser):
         pass
@@ -61,7 +66,6 @@ class Blueprint(abc.ABC):
         instance = cls()
         instance.name = name
         instance.image = schema.image or instance.image
-        instance.labels.update({__LABEL_BLUEPRINT__: cls})
         return instance
 
     @classmethod
@@ -73,7 +77,7 @@ class Blueprint(abc.ABC):
         console.print(table)
 
     def create(self, runtime, args: argparse.Namespace):
-        service = runtime.default_platform.service_create(blueprint=self)
+        service = runtime.platform.service_create(blueprint=self)
         console.print(f'Service {self.name} of kind {self.kind} created')
         return service
 
@@ -81,5 +85,5 @@ class Blueprint(abc.ABC):
         console.print(f'Listing services of kind {self.kind}')
 
     def remove(self, runtime, args: argparse.Namespace):
-        runtime.default_platform.service_remove(blueprint=self)
+        runtime.platform.service_remove(blueprint=self)
         console.print(f'Service {self.name} of kind {self.kind} removed')

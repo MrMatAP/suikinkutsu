@@ -20,6 +20,29 @@
 #  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 #  SOFTWARE.
 
-from .platform import Platform
-import water.platforms.docker
-import water.platforms.nerdctl
+import abc
+
+
+class Output(abc.ABC):
+
+    name: str = 'base'
+
+    @abc.abstractmethod
+    def exception(self, ex: Exception):
+        pass
+
+    @abc.abstractmethod
+    def config(self, runtime):
+        pass
+
+    @abc.abstractmethod
+    def info(self, msg: str):
+        pass
+
+    @abc.abstractmethod
+    def warning(self, msg: str):
+        pass
+
+    @abc.abstractmethod
+    def error(self, msg: str):
+        pass

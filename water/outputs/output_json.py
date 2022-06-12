@@ -20,6 +20,36 @@
 #  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 #  SOFTWARE.
 
-from .platform import Platform
-import water.platforms.docker
-import water.platforms.nerdctl
+import json
+from .output import Output
+
+
+class JSONOutput(Output):
+    name: str = 'json'
+
+    def exception(self, ex: Exception):
+        ex_dict = {
+            'Exception': str(ex),
+            'Type': type(ex)
+        }
+        print(json.dumps(ex_dict))
+
+    def config(self, runtime):
+        config_dict = {
+            'config-file': runtime.config_file,
+            'config-file-source': runtime.config_file_source,
+            'config-dir': runtime.config_dir,
+            'config-dir-source': runtime.config_dir_source,
+            'output': runtime.output.name,
+            'output-source': runtime.output_source
+        }
+        print(json.dumps(config_dict))
+
+    def info(self, msg: str):
+        print(json.dumps({'INFO': msg}))
+
+    def warning(self, msg: str):
+        print(json.dumps({'WARNING': msg}))
+
+    def error(self, msg: str):
+        print(json.dumps({'ERROR': msg}))

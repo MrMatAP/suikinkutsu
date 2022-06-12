@@ -21,16 +21,15 @@
 #  SOFTWARE.
 
 import argparse
-from typing import Dict, List
+from typing import Dict
 import secrets
 
-from water import console
-from water.blueprints.blueprint import Blueprint, BlueprintSchema
+from water.blueprints.blueprint import Blueprint
 
 
 class PostgreSQL(Blueprint):
 
-    name: str = 'postgres'
+    name: str = 'pg'
     kind: str = 'postgres'
     description: str = 'PostgreSQL is a modern relational database'
 

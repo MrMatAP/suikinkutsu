@@ -20,6 +20,36 @@
 #  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 #  SOFTWARE.
 
-from .platform import Platform
-import water.platforms.docker
-import water.platforms.nerdctl
+import yaml
+from .output import Output
+
+
+class YAMLOutput(Output):
+    name: str = 'yaml'
+
+    def exception(self, ex: Exception):
+        ex_dict = {
+            'Exception': str(ex),
+            'Type': type(ex)
+        }
+        print(yaml.safe_dump(ex_dict))
+
+    def config(self, runtime):
+        config_dict = {
+            'config-file': runtime.config_file,
+            'config-file-source': runtime.config_file_source,
+            'config-dir': runtime.config_dir,
+            'config-dir-source': runtime.config_dir_source,
+            'output': runtime.output.name,
+            'output-source': runtime.output_source
+        }
+        print(yaml.safe_dump(config_dict))
+
+    def info(self, msg: str):
+        print(yaml.safe_dump({'INFO': msg}))
+
+    def warning(self, msg: str):
+        print(yaml.safe_dump({'WARNING': msg}))
+
+    def error(self, msg: str):
+        print(yaml.safe_dump({'ERROR': msg}))

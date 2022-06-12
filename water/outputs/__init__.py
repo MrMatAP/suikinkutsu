@@ -20,6 +20,7 @@
 #  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 #  SOFTWARE.
 
-from .platform import Platform
-import water.platforms.docker
-import water.platforms.nerdctl
+from .output import Output
+from .output_default import DefaultOutput
+from .output_json import JSONOutput
+from .output_yaml import YAMLOutput

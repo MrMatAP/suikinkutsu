@@ -31,7 +31,9 @@ except importlib.metadata.PackageNotFoundError:
     # You have not yet installed this as a package, likely because you're hacking on it in some IDE
     __version__ = '0.0.0.dev0'
 
-__default_configuration__ = os.path.expanduser(os.path.join('~', '.water'))
-__configuration__ = os.getenv('WATER_CONFIG', __default_configuration__)
-__LABEL_BLUEPRINT__ = 'org.mrmat.water.blueprint'
+DEFAULT_CONFIG_FILE = os.path.expanduser(os.path.join('~', '.water'))
+DEFAULT_CONFIG_DIR = os.path.expanduser(os.path.join('~', 'etc'))
+DEFAULT_OUTPUT = 'default'
+LABEL_BLUEPRINT = 'org.mrmat.water.blueprint'
+
 console = Console()
