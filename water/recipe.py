@@ -20,31 +20,36 @@
 #  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 #  SOFTWARE.
 
-import os
+from typing import Dict, Type
 import yaml
-from argparse import Namespace
-from typing import List
+from pydantic import BaseModel
 from water import console
 from water.exceptions import MurkyWaterException
-from water.blueprints import Blueprint, RecipeSchema
+from water.blueprints import BlueprintSchema, Blueprint
+
+
+class RecipeSchema(BaseModel):
+    blueprints: Dict[str, BlueprintSchema]
 
 
 class Recipe:
-    blueprints: List[Blueprint] = []
 
-    def __init__(self, runtime, args: Namespace):
-        if not hasattr(args, 'recipe'):
+    def __init__(self, runtime):
+        self._blueprints: Dict[str, Type[Blueprint]] = {}
+        if not runtime.recipe_file.exists():
             return
-        if not os.path.exists(args.recipe):
-            raise MurkyWaterException(msg=f'There is no recipe at {args.recipe}')
         try:
-            with open(args.recipe, 'r', encoding='UTF-8') as r:
+            with open(runtime.recipe_file, 'r', encoding='UTF-8') as r:
                 raw_recipe = yaml.safe_load(r)
             parsed_recipe = RecipeSchema.parse_obj(raw_recipe)
             for name, bp_schema in parsed_recipe.blueprints.items():
                 if bp_schema.kind not in runtime.available_blueprints:
                     raise MurkyWaterException(msg=f'Blueprint {bp_schema.kind} for instance {name} is not known')
                 blueprint = runtime.available_blueprints[bp_schema.kind].from_schema(runtime, name, bp_schema)
-                self.blueprints.append(blueprint)
+                self.blueprints[name] = blueprint
         except Exception as e:
             console.print_exception()
+
+    @property
+    def blueprints(self) -> Dict[str, Type[Blueprint]]:
+        return self._blueprints

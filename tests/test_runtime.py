@@ -21,17 +21,31 @@
 #  SOFTWARE.
 
 import os
-import importlib.metadata
-from rich.console import Console
-from .exceptions import MurkyWaterException
-
-try:
-    __version__ = importlib.metadata.version('water')
-except importlib.metadata.PackageNotFoundError:
-    # You have not yet installed this as a package, likely because you're hacking on it in some IDE
-    __version__ = '0.0.0.dev0'
+import json
+import water.runtime
 
 
-LABEL_BLUEPRINT = 'org.mrmat.water.blueprint'
+def test_runtime_defaults():
+    r = water.runtime.Runtime()
+    assert r.config_file == water.runtime.DEFAULT_CONFIG_FILE
+    assert r.config_file_source == water.runtime.Source.DEFAULT
+    assert r.config_dir == water.runtime.DEFAULT_CONFIG_DIR
+    assert r.config_dir_source == water.runtime.Source.DEFAULT
+    assert r.output.__class__.__name__ == water.runtime.DEFAULT_OUTPUT_CLASS
+    assert r.output_source == water.runtime.Source.DEFAULT
 
-console = Console()
+
+def test_runtime_with_configfile(tmp_path):
+    config_dir = tmp_path / "etc"
+    config_dir.mkdir()
+    config_file = tmp_path / ".water"
+    config_file.write_text(json.dumps({
+        'config_dir': str(config_dir)
+    }))
+    os.environ[water.runtime.ENV_CONFIG_FILE] = str(config_file)
+    r = water.runtime.Runtime()
+    assert r.config_file == str(config_file)
+    assert r.config_file_source == water.runtime.Source.ENVIRONMENT
+    assert r.config_dir == str(config_dir)
+    assert r.config_dir_source == water.runtime.Source.CONFIGURATION
+    del(os.environ[water.runtime.ENV_CONFIG_FILE])

@@ -24,15 +24,10 @@ import abc
 
 
 class Output(abc.ABC):
-
-    name: str = 'base'
+    name: str = 'BasePlatform'
 
     @abc.abstractmethod
     def exception(self, ex: Exception):
-        pass
-
-    @abc.abstractmethod
-    def config(self, runtime):
         pass
 
     @abc.abstractmethod
@@ -46,3 +41,47 @@ class Output(abc.ABC):
     @abc.abstractmethod
     def error(self, msg: str):
         pass
+
+    @abc.abstractmethod
+    def config(self, runtime):
+        pass
+
+    @abc.abstractmethod
+    def platform_list(self, runtime):
+        pass
+
+    @abc.abstractmethod
+    def cook_show(self, runtime):
+        pass
+
+    @staticmethod
+    def _exception_dict(ex: Exception):
+        return {
+            'Exception': str(ex),
+            'Type': type(ex)
+        }
+
+    @staticmethod
+    def _config_dict(runtime):
+        return {
+            'config-file': str(runtime.config_file),
+            'config-file-source': runtime.config_file_source.value,
+            'config-dir': str(runtime.config_dir),
+            'config-dir-source': runtime.config_dir_source.value,
+            'output': runtime.output.name,
+            'output-source': runtime.output_source.value,
+            'platform': runtime.platform.name,
+            'platform-source': runtime.platform_source.value,
+            'recipe-file': str(runtime.recipe_file),
+            'recipe-file-source': runtime.recipe_file_source.value
+        }
+
+    @staticmethod
+    def _platform_list(runtime):
+        return [
+            {
+                'name': platform.name,
+                'available': platform.available(),
+                'description': platform.description
+            }
+            for platform in runtime.available_platforms]

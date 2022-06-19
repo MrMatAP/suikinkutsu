@@ -22,27 +22,16 @@
 
 from water import console
 from water.outputs.output import Output
-from rich.tree import Tree
 from rich.table import Table
 from rich.box import ROUNDED
 
 
 class DefaultOutput(Output):
 
-    name: str = 'default'
+    name: str = 'DefaultOutput'
 
     def exception(self, ex: Exception):
         console.print_exception()
-
-    def config(self, runtime):
-        table = Table(title='Configuration', box=ROUNDED)
-        table.add_column('Key')
-        table.add_column('Value')
-        table.add_column('Source')
-        table.add_row('config_file', runtime.config_file, runtime.config_file_source)
-        table.add_row('config_dir', runtime.config_dir, runtime.config_dir_source)
-        table.add_row('output', runtime.output.name, runtime.output_source)
-        console.print(table)
 
     def info(self, msg: str):
         console.print(msg)
@@ -52,5 +41,37 @@ class DefaultOutput(Output):
 
     def error(self, msg: str):
         console.print(f'[bold red]Error:[/bold red] {msg}')
+
+    def config(self, runtime):
+        table = Table(title='Configuration', box=ROUNDED)
+        table.add_column('Key')
+        table.add_column('Value')
+        table.add_column('Source')
+        table.add_row('config_file', str(runtime.config_file), runtime.config_file_source.value)
+        table.add_row('config_dir', str(runtime.config_dir), runtime.config_dir_source.value)
+        table.add_row('output', runtime.output.name, runtime.output_source.value)
+        table.add_row('platform', runtime.platform.name, runtime.platform_source.value)
+        table.add_row('recipe_file', str(runtime.recipe_file), runtime.recipe_file_source.value)
+        console.print(table)
+
+    def platform_list(self, runtime):
+        table = Table(title='Available Platforms', box=ROUNDED)
+        table.add_column('Platform')
+        table.add_column('Available')
+        table.add_column('Description')
+        [table.add_row(name,
+                       str(cls.available()),
+                       cls.description)
+         for name, cls in runtime.available_platforms.items()]
+        console.print(table)
+
+    def cook_show(self, runtime):
+        table = Table(title='Recipe', box=ROUNDED)
+        table.add_column('Name')
+        [table.add_row(name)
+         for name in runtime.recipe.blueprints.keys()]
+        console.print(table)
+
+
 
 

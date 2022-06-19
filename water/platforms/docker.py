@@ -19,6 +19,7 @@
 #  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 #  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 #  SOFTWARE.
+import pathlib
 import typing
 from typing import List, Dict, Optional
 import datetime
@@ -26,7 +27,7 @@ import shutil
 import json
 from pydantic import BaseModel, Field, parse_raw_as
 
-from water import console
+from water import console, MurkyWaterException
 from water.platforms.platform import Platform
 import water.schema
 
@@ -79,14 +80,19 @@ class DockerInspectionSchema(BaseModel):
     mounts: List[DockerInspectionMountsSchema] = Field(alias='Mounts')
     config: DockerInspectionConfigSchema = Field(alias='Config')
 
+
 class Docker(Platform):
+
     name: str = 'docker'
     description: str = 'Docker is the classic containerisation platform'
     executable_name = 'docker'
 
-    def available(self) -> bool:
-        self.executable = shutil.which(self.executable_name)
-        return True if self.executable else False
+    def __init__(self):
+        super().__init__()
+        try:
+            self._execute(['ps', '-q'])
+        except MurkyWaterException:
+            self._available = False
 
     def volume_create(self, name: str) -> water.schema.Volume:
         self._execute(['volume', 'create',

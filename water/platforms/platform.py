@@ -21,27 +21,38 @@
 #  SOFTWARE.
 
 from typing import List, Optional
+import shutil
 import abc
 import subprocess
-import argparse
-from rich.table import Table
-from rich.box import ROUNDED
-from water import MurkyWaterException, console
+import pathlib
+from argparse import ArgumentParser, Namespace
+from water import MurkyWaterException
 
 
 class Platform(abc.ABC):
-    name: str
+
+    name: str = 'base'
     executable_name: str = None
-    executable: str = None
+    _executable: pathlib.Path = None
+    _available: bool = False
 
-    def __init__(self, runtime):
-        if self.available():
-            runtime.available_platforms.append(self)
+    def __init__(self):
+        executable_path = shutil.which(self.executable_name)
+        self._executable = pathlib.Path(executable_path) or None
+        self._available = bool(self._executable)
 
-    def available(self) -> bool:
-        return False
+    def executable(self) -> Optional[pathlib.Path]:
+        return self._executable
 
-    def cli(self, parser):
+    def available(self):
+        return self._available
+
+    @classmethod
+    def cli(cls, parser: ArgumentParser):
+        pass
+
+    @classmethod
+    def cli_assess(cls, args: Namespace):
         pass
 
     @abc.abstractmethod
@@ -72,19 +83,11 @@ class Platform(abc.ABC):
     def service_remove(self, blueprint):
         pass
 
-    @classmethod
-    def platform_list(cls, runtime, args: argparse.Namespace):
-        table = Table(title='Available Platforms', box=ROUNDED)
-        table.add_column('Platform')
-        table.add_column('Description')
-        [table.add_row(rt.name, rt.description) for rt in runtime.available_platforms]
-        console.print(table)
-
     def _execute(self, args: List[str]) -> subprocess.CompletedProcess:
-        if not self.executable:
+        if not self.executable():
             raise MurkyWaterException(msg=f'Unable to find {self.executable_name} on your path')
         try:
-            args.insert(0, self.executable)
+            args.insert(0, str(self.executable()))
             return subprocess.run(args=args,
                                   capture_output=True,
                                   check=True,

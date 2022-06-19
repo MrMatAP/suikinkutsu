@@ -28,22 +28,8 @@ class YAMLOutput(Output):
     name: str = 'yaml'
 
     def exception(self, ex: Exception):
-        ex_dict = {
-            'Exception': str(ex),
-            'Type': type(ex)
-        }
+        ex_dict = self._exception_dict(ex)
         print(yaml.safe_dump(ex_dict))
-
-    def config(self, runtime):
-        config_dict = {
-            'config-file': runtime.config_file,
-            'config-file-source': runtime.config_file_source,
-            'config-dir': runtime.config_dir,
-            'config-dir-source': runtime.config_dir_source,
-            'output': runtime.output.name,
-            'output-source': runtime.output_source
-        }
-        print(yaml.safe_dump(config_dict))
 
     def info(self, msg: str):
         print(yaml.safe_dump({'INFO': msg}))
@@ -53,3 +39,15 @@ class YAMLOutput(Output):
 
     def error(self, msg: str):
         print(yaml.safe_dump({'ERROR': msg}))
+
+    def config(self, runtime):
+        config_dict = self._config_dict(runtime)
+        print(yaml.safe_dump(config_dict))
+
+    def platform_list(self, runtime):
+        platforms = self._platform_list(runtime)
+        print(yaml.safe_dump(platforms))
+
+    def cook_show(self, runtime):
+        pass
+

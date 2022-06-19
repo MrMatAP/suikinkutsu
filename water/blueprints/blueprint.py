@@ -23,10 +23,10 @@
 import argparse
 import abc
 from typing import Dict, Optional
+from pydantic import BaseModel
 from rich.table import Table
 from rich.box import ROUNDED
 from water import console, LABEL_BLUEPRINT
-from pydantic import BaseModel
 
 
 class BlueprintSchema(BaseModel):
@@ -36,10 +36,6 @@ class BlueprintSchema(BaseModel):
     volumes: Optional[Dict[str, str]]
     environment: Optional[Dict[str, str]]
     ports: Optional[Dict[str, str]]
-
-
-class RecipeSchema(BaseModel):
-    blueprints: Dict[str, BlueprintSchema]
 
 
 class Blueprint(abc.ABC):

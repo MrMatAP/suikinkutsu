@@ -20,12 +20,43 @@
 #  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 #  SOFTWARE.
 
-from water.platforms.docker import Docker
+from typing import Optional
+
+from water import MurkyWaterException
+from .platform import Platform
 
 
-class Nerdctl(Docker):
+class Nerdctl(Platform):
 
     name: str = 'nerdctl'
     description: str = 'nerdctl is a modern CLI for a containerd implementation, brought to you ' \
                        'via Rancher Desktop (for example).'
     executable_name = 'nerdctl'
+
+    def __init__(self):
+        super().__init__()
+        try:
+            self._execute(['ps', '-q'])
+        except MurkyWaterException:
+            self._available = False
+
+    def volume_create(self, name: str):
+        pass
+
+    def volume_list(self):
+        pass
+
+    def volume_remove(self, name: str):
+        pass
+
+    def service_create(self, blueprint):
+        pass
+
+    def service_list(self, name: Optional[str] = None):
+        pass
+
+    def service_show(self, blueprint):
+        pass
+
+    def service_remove(self, blueprint):
+        pass

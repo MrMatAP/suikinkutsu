@@ -21,5 +21,5 @@
 #  SOFTWARE.
 
 from .platform import Platform
-import water.platforms.docker
-import water.platforms.nerdctl
+from .docker import Docker
+from .nerdctl import Nerdctl

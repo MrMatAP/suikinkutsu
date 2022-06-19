@@ -30,7 +30,6 @@ import water.blueprints
 import water.platforms
 import water.outputs
 from water.runtime import Runtime
-from water.recipe import Recipe
 
 
 def config_show(runtime: Runtime, args: argparse.Namespace) -> int:
@@ -40,7 +39,12 @@ def config_show(runtime: Runtime, args: argparse.Namespace) -> int:
 
 def config_set(runtime: Runtime, args: argparse.Namespace) -> int:
     runtime._config_save()
+    return 0
 
+
+def platform_list(runtime: Runtime, args: argparse.Namespace) -> int:
+    runtime.output.platform_list(runtime)
+    return 0
 
 def instance_list(runtime: Runtime, args: argparse.Namespace) -> int:
     runtime.platform.service_list()
@@ -73,9 +77,9 @@ def cook_down(runtime: Runtime, args: argparse.Namespace) -> int:
         return 1
 
 
-def cook_list(runtime: Runtime, args: argparse.Namespace) -> int:
+def cook_show(runtime: Runtime, args: argparse.Namespace) -> int:
     try:
-        [blueprint.list(runtime, args) for blueprint in runtime.recipe.blueprints]
+        runtime.output.cook_show(runtime)
         return 0
     except Exception as e:
         console.print_exception()
@@ -110,7 +114,7 @@ def main() -> int:
     pf_parser = subparsers.add_parser(name='platform', help='Platform Commands')
     pf_subparser = pf_parser.add_subparsers()
     pf_list_parser = pf_subparser.add_parser('list', help='List available platforms')
-    pf_list_parser.set_defaults(cmd=water.platforms.Platform.platform_list)
+    pf_list_parser.set_defaults(cmd=platform_list)
 
     bp_parser = subparsers.add_parser(name='blueprint', help='Blueprint Commands')
     bp_subparser = bp_parser.add_subparsers()
@@ -131,20 +135,18 @@ def main() -> int:
     cook_subparser = cook_parser.add_subparsers()
     cook_up_parser = cook_subparser.add_parser(name='up', help='Start an environment')
     cook_up_parser.set_defaults(cmd=cook_up)
-    cook_list_parser = cook_subparser.add_parser(name='list', help='List environments')
-    cook_list_parser.set_defaults(cmd=cook_list)
+    cook_show_parser = cook_subparser.add_parser(name='show', help='Show the environment')
+    cook_show_parser.set_defaults(cmd=cook_show)
     cook_down_parser = cook_subparser.add_parser('down', help='Stop a running environment')
     cook_down_parser.set_defaults(cmd=cook_down)
 
     try:
         runtime = Runtime()
         [blueprint.cli(subparsers) for blueprint in runtime.available_blueprints.values()]
-        [platform.cli(subparsers) for platform in runtime.available_platforms]
+        [platform.cli(subparsers) for platform in runtime.available_platforms.values()]
         runtime.cli_prepare(parser)
         args = parser.parse_args()
         runtime.cli_assess(args)
-
-        runtime.recipe = Recipe(runtime, args)
 
         if hasattr(args, 'cmd'):
             return args.cmd(runtime, args)
