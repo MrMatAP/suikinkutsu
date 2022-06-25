@@ -21,15 +21,16 @@
 #  SOFTWARE.
 
 import os
+import pathlib
 import json
 import water.runtime
 
 
 def test_runtime_defaults():
     r = water.runtime.Runtime()
-    assert r.config_file == water.runtime.DEFAULT_CONFIG_FILE
+    assert r.config_file == pathlib.Path(water.runtime.DEFAULT_CONFIG_FILE)
     assert r.config_file_source == water.runtime.Source.DEFAULT
-    assert r.config_dir == water.runtime.DEFAULT_CONFIG_DIR
+    assert r.config_dir == pathlib.Path(water.runtime.DEFAULT_CONFIG_DIR)
     assert r.config_dir_source == water.runtime.Source.DEFAULT
     assert r.output.__class__.__name__ == water.runtime.DEFAULT_OUTPUT_CLASS
     assert r.output_source == water.runtime.Source.DEFAULT
@@ -44,8 +45,8 @@ def test_runtime_with_configfile(tmp_path):
     }))
     os.environ[water.runtime.ENV_CONFIG_FILE] = str(config_file)
     r = water.runtime.Runtime()
-    assert r.config_file == str(config_file)
+    assert r.config_file == config_file
     assert r.config_file_source == water.runtime.Source.ENVIRONMENT
-    assert r.config_dir == str(config_dir)
+    assert r.config_dir == pathlib.Path(config_dir)
     assert r.config_dir_source == water.runtime.Source.CONFIGURATION
     del(os.environ[water.runtime.ENV_CONFIG_FILE])
