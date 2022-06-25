@@ -21,5 +21,4 @@
 #  SOFTWARE.
 
 from .platform import Platform
-from .docker import Docker
-from .nerdctl import Nerdctl
+from .docker_like import Docker, Nerdctl

@@ -19,6 +19,7 @@
 #  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 #  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 #  SOFTWARE.
+
 import pathlib
 import typing
 from typing import List, Dict, Optional
@@ -81,18 +82,11 @@ class DockerInspectionSchema(BaseModel):
     config: DockerInspectionConfigSchema = Field(alias='Config')
 
 
-class Docker(Platform):
-
-    name: str = 'docker'
-    description: str = 'Docker is the classic containerisation platform'
-    executable_name = 'docker'
-
-    def __init__(self):
-        super().__init__()
-        try:
-            self._execute(['ps', '-q'])
-        except MurkyWaterException:
-            self._available = False
+class DockerLike:
+    """
+    This class provides the shared methods used by both Docker and NerdCtl which those two inherit
+    from in addition to the Platform interface. The only difference is really the binary executed
+    """
 
     def volume_create(self, name: str) -> water.schema.Volume:
         self._execute(['volume', 'create',
@@ -114,6 +108,9 @@ class Docker(Platform):
                                               labels=json_volume['Labels'],
                                               mountpoint=json_volume['Mountpoint']))
         return result
+
+    def volume_show(self):
+        pass
 
     def volume_remove(self, name: str):
         self._execute(['volume', 'rm', name])
@@ -157,3 +154,32 @@ class Docker(Platform):
         self._execute(['container', 'stop', blueprint.name])
         self._execute(['container', 'rm', blueprint.name])
         [self._execute(['volume', 'rm', vol]) for vol in blueprint.volumes]
+
+
+class Docker(DockerLike, Platform):
+
+    name: str = 'docker'
+    description: str = 'Docker is the classic containerisation platform'
+    executable_name = 'docker'
+
+    def __init__(self):
+        super().__init__()
+        try:
+            self._execute(['ps', '-q'])
+        except MurkyWaterException:
+            self._available = False
+
+
+class Nerdctl(DockerLike, Platform):
+
+    name: str = 'nerdctl'
+    description: str = 'nerdctl is a modern CLI for a containerd implementation, brought to you ' \
+                       'via Rancher Desktop (for example).'
+    executable_name = 'nerdctl'
+
+    def __init__(self):
+        super().__init__()
+        try:
+            self._execute(['ps', '-q'])
+        except MurkyWaterException:
+            self._available = False

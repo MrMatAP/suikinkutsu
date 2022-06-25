@@ -64,6 +64,10 @@ class Platform(abc.ABC):
         pass
 
     @abc.abstractmethod
+    def volume_show(self):
+        pass
+
+    @abc.abstractmethod
     def volume_remove(self, name: str):
         pass
 
