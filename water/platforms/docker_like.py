@@ -20,17 +20,14 @@
 #  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 #  SOFTWARE.
 
-import pathlib
 import typing
 from typing import List, Dict, Optional
 import datetime
-import shutil
 import json
 from pydantic import BaseModel, Field, parse_raw_as
 
 from water import console, MurkyWaterException
 from water.platforms.platform import Platform
-import water.schema
 
 
 class DockerInspectionStateSchema(BaseModel):
@@ -88,7 +85,7 @@ class DockerLike:
     from in addition to the Platform interface. The only difference is really the binary executed
     """
 
-    def volume_create(self, name: str) -> water.schema.Volume:
+    def volume_create(self, name: str):
         self._execute(['volume', 'create',
                        '--label', 'org.mrmat.created-by=water',
                        name])
@@ -96,17 +93,17 @@ class DockerLike:
 
         console.print(f'Volume {name} successfully created')
 
-    def volume_list(self) -> List['water.schema.volume.Volume']:
+    def volume_list(self):
         result = self._execute(['volume', 'ls', '--format', '{{ json . }}'])
         raw_volumes = [e for e in result.stdout.split('\n') if e.startswith('{')]
         result = []
-        for raw_volume in raw_volumes:
-            json_volume = json.loads(raw_volume)
-            result.append(water.schema.Volume(name=json_volume['Name'],
-                                              scope=json_volume['Scope'],
-                                              driver=json_volume['Driver'],
-                                              labels=json_volume['Labels'],
-                                              mountpoint=json_volume['Mountpoint']))
+        # for raw_volume in raw_volumes:
+        #     json_volume = json.loads(raw_volume)
+        #     result.append(water.schema.Volume(name=json_volume['Name'],
+        #                                       scope=json_volume['Scope'],
+        #                                       driver=json_volume['Driver'],
+        #                                       labels=json_volume['Labels'],
+        #                                       mountpoint=json_volume['Mountpoint']))
         return result
 
     def volume_show(self):
@@ -130,7 +127,7 @@ class DockerLike:
         cmd.append(blueprint.image)
         self._execute(cmd)
 
-    def service_list(self, name: Optional[str] = None) -> List['water.schema.Instance']:
+    def service_list(self, name: Optional[str] = None):
         result = self._execute(['container', 'ls', '--all', '--quiet'])
         container_ids = [container_id for container_id in result.stdout.split('\n') if container_id != '']
         if len(container_ids) == 0:
@@ -169,6 +166,18 @@ class Docker(DockerLike, Platform):
         except MurkyWaterException:
             self._available = False
 
+    def blueprint_create(self, blueprint):
+        pass
+
+    def blueprint_list(self, blueprint):
+        pass
+
+    def blueprint_show(self, blueprint):
+        pass
+
+    def blueprint_remove(self, blueprint):
+        pass
+
 
 class Nerdctl(DockerLike, Platform):
 
@@ -183,3 +192,15 @@ class Nerdctl(DockerLike, Platform):
             self._execute(['ps', '-q'])
         except MurkyWaterException:
             self._available = False
+
+    def blueprint_create(self, blueprint):
+        self.service_create(blueprint)
+
+    def blueprint_list(self, blueprint):
+        pass
+
+    def blueprint_show(self, blueprint):
+        pass
+
+    def blueprint_remove(self, blueprint):
+        self.service_remove(blueprint)

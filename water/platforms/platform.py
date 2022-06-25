@@ -56,6 +56,22 @@ class Platform(abc.ABC):
         pass
 
     @abc.abstractmethod
+    def blueprint_create(self, blueprint):
+        pass
+
+    @abc.abstractmethod
+    def blueprint_list(self, blueprint):
+        pass
+
+    @abc.abstractmethod
+    def blueprint_show(self, blueprint):
+        pass
+
+    @abc.abstractmethod
+    def blueprint_remove(self, blueprint):
+        pass
+
+    @abc.abstractmethod
     def volume_create(self, name: str):
         pass
 

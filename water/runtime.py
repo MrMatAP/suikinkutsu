@@ -26,24 +26,15 @@ import enum
 import json
 from typing import Dict, Type
 from argparse import ArgumentParser, Namespace
-from pydantic import BaseModel, Field
 
-from water import MurkyWaterException
 from water.outputs import Output
 from water.blueprints import Blueprint
 from water.platforms import Platform
 from water.recipe import Recipe
-
-DEFAULT_CONFIG_FILE = os.path.expanduser(os.path.join('~', '.water'))
-ENV_CONFIG_FILE = 'WATER_CONFIG_FILE'
-DEFAULT_CONFIG_DIR = os.path.expanduser(os.path.join('~', 'etc'))
-ENV_CONFIG_DIR = 'WATER_CONFIG_DIR'
-DEFAULT_OUTPUT_CLASS = 'DefaultOutput'
-ENV_OUTPUT_CLASS = 'WATER_DEFAULT_OUTPUT'
-DEFAULT_PLATFORM_CLASS = 'docker'
-ENV_PLATFORM_CLASS = 'WATER_DEFAULT_PLATFORM'
-DEFAULT_RECIPE_FILE = os.path.join(os.path.curdir, 'Recipe')
-ENV_RECIPE_FILE = 'WATER_RECIPE'
+from water.schema import WaterConfiguration
+from water.constants import DEFAULT_CONFIG_FILE, ENV_CONFIG_FILE, DEFAULT_CONFIG_DIR, ENV_CONFIG_DIR, \
+    DEFAULT_OUTPUT_CLASS, ENV_OUTPUT_CLASS, DEFAULT_PLATFORM_CLASS, ENV_PLATFORM_CLASS, DEFAULT_RECIPE_FILE, \
+    ENV_RECIPE_FILE, ENV_SECRETS_FILE
 
 
 @enum.unique
@@ -55,12 +46,6 @@ class Source(enum.Enum):
 
     def __str__(self):
         return self.value
-
-
-class WaterConfiguration(BaseModel):
-    config_dir: str = Field(description='Directory into which water generates configuration files', default=None)
-    default_output: str = Field(description='Default output format', default=None)
-    default_platform: str = Field(description='Default platform', default=None)
 
 
 class Runtime:
@@ -82,11 +67,14 @@ class Runtime:
         self.recipe_file = pathlib.Path(DEFAULT_RECIPE_FILE)
         self.recipe_file_source = Source.DEFAULT
         self.recipe = Recipe(self)
+        self.secrets_file = self.config_dir / f'{self.recipe_file.parent.name}.json'
+        self.secrets_file_source = Source.DEFAULT
+        self._secrets = {}
 
         if ENV_CONFIG_FILE in os.environ:
             self.config_file = pathlib.Path(os.getenv(ENV_CONFIG_FILE))
             self.config_file_source = Source.ENVIRONMENT
-        self._config_load()
+        self.config_load()
 
         if ENV_CONFIG_DIR in os.environ:
             self.config_dir = pathlib.Path(os.getenv(ENV_CONFIG_DIR))
@@ -100,6 +88,9 @@ class Runtime:
         if ENV_RECIPE_FILE in os.environ:
             self.recipe_file = os.getenv(ENV_RECIPE_FILE)
             self.recipe_file_source = Source.ENVIRONMENT
+        if ENV_SECRETS_FILE in os.environ:
+            self.secrets_file = os.getenv(ENV_SECRETS_FILE)
+            self.secrets_file_source = Source.ENVIRONMENT
 
     def cli_prepare(self, parser: ArgumentParser):
         parser.add_argument('-c',
@@ -120,12 +111,17 @@ class Runtime:
                             choices=[name for name in self.available_platforms.keys()],
                             required=False,
                             help='Override the default platform for this invocation')
+        parser.add_argument('-s', '--secrets',
+                            dest='override_secrets_file',
+                            required=False,
+                            help='Override the secrets file for this invocation')
 
     def cli_assess(self, args: Namespace):
         if args.override_config_file and args.override_config_file != DEFAULT_CONFIG_FILE:
             self.config_file = pathlib.Path(args.override_config_file)
             self.config_file_source = Source.CLI
-            self._config_load()
+            self.config_load()
+
         if args.override_config_dir and args.override_config_dir != DEFAULT_CONFIG_DIR:
             self.config_dir = args.override_config_dir
             self.config_dir_source = Source.CLI
@@ -135,8 +131,12 @@ class Runtime:
         if args.override_default_platform and args.override_default_platform != DEFAULT_PLATFORM_CLASS:
             self.platform = args.override_default_platform
             self.platform_source = Source.CLI
+        if args.override_secrets_file:
+            self.secrets_file = args.override_secrets_file
+            self.secrets_file_source = Source.CLI
+        self.secrets_load()
 
-    def _config_load(self):
+    def config_load(self):
         raw_config = WaterConfiguration.construct()
         if self.config_file.exists():
             raw_config = WaterConfiguration.parse_file(self.config_file)
@@ -150,13 +150,20 @@ class Runtime:
             self.platform = raw_config.default_platform
             self.platform_source = Source.CONFIGURATION
 
-    def _config_save(self):
+    def config_save(self):
+        config = WaterConfiguration(config_dir=self.config_dir,
+                                    default_output=self.output.name,
+                                    default_platform=self.platform.name)
         with open(self.config_file, 'w+', encoding='UTF-8') as c:
-            c.write(json.dumps({
-                'config_dir': str(self.config_dir),
-                'default_output': self.output.name,
-                'default_platform': self.platform.name,
-            }, indent=2))
+            json.dump(config.dict(), c, indent=2)
+
+    def secrets_load(self):
+        if self.secrets_file.exists():
+            self._secrets = json.loads(self.secrets_file.read_text(encoding='UTF-8'))
+
+    def secrets_save(self):
+        self.secrets_file.parent.mkdir(parents=True, exist_ok=True)
+        self.secrets_file.write_text(json.dumps(self.secrets))
 
     @property
     def config_file(self) -> pathlib.Path:
@@ -264,3 +271,22 @@ class Runtime:
     def recipe(self, value: Recipe):
         self._recipe = value
 
+    @property
+    def secrets_file(self) -> pathlib.Path:
+        return self._secrets_file
+
+    @secrets_file.setter
+    def secrets_file(self, value: pathlib.Path):
+        self._secrets_file = value
+
+    @property
+    def secrets_file_source(self) -> Source:
+        return self._secrets_file_source
+
+    @secrets_file_source.setter
+    def secrets_file_source(self, value: Source):
+        self._secrets_file_source = value
+
+    @property
+    def secrets(self) -> Dict:
+        return self._secrets

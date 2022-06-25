@@ -20,5 +20,18 @@
 #  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 #  SOFTWARE.
 
-from water.schema.volume import Volume
-from water.schema.instance import Instance
+import os
+
+DEFAULT_CONFIG_FILE = os.path.expanduser(os.path.join('~', '.water'))
+ENV_CONFIG_FILE = 'WATER_CONFIG_FILE'
+DEFAULT_CONFIG_DIR = os.path.expanduser(os.path.join('~', 'etc'))
+ENV_CONFIG_DIR = 'WATER_CONFIG_DIR'
+DEFAULT_OUTPUT_CLASS = 'DefaultOutput'
+ENV_OUTPUT_CLASS = 'WATER_DEFAULT_OUTPUT'
+DEFAULT_PLATFORM_CLASS = 'nerdctl'
+ENV_PLATFORM_CLASS = 'WATER_DEFAULT_PLATFORM'
+DEFAULT_RECIPE_FILE = os.path.join(os.path.abspath(os.path.curdir), 'Recipe')
+ENV_RECIPE_FILE = 'WATER_RECIPE'
+ENV_SECRETS_FILE = 'WATER_SECRETS_FILE'
+LABEL_BLUEPRINT: str = 'org.mrmat.water.blueprint'
+LABEL_CREATED_BY: str = 'org.mrmat.created-by'

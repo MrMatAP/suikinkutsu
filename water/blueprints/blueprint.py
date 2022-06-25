@@ -20,66 +20,71 @@
 #  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 #  SOFTWARE.
 
-import argparse
+from argparse import Namespace
 import abc
-from typing import Dict, Optional
-from pydantic import BaseModel
-from rich.table import Table
-from rich.box import ROUNDED
-from water import console, LABEL_BLUEPRINT
+from typing import Optional
 
-
-class BlueprintSchema(BaseModel):
-    kind: str
-    image: Optional[str]
-    labels: Optional[Dict[str, str]]
-    volumes: Optional[Dict[str, str]]
-    environment: Optional[Dict[str, str]]
-    ports: Optional[Dict[str, str]]
+from water.schema import BlueprintSchema
+from water.constants import LABEL_BLUEPRINT
 
 
 class Blueprint(abc.ABC):
-
-    name: str = "base"
     kind: str = 'base'
     description: str = "An abstract base blueprint"
-    image: str = ""
-    volumes: Dict[str, str] = {}
-    environment: Dict[str, str] = {}
-    ports: Dict[str, str] = {}
-    labels: Dict[str, str] = {}
+    _defaults: BlueprintSchema = BlueprintSchema(
+        kind='base',
+        name='base',
+        image='',
+        volumes={},
+        environment={},
+        ports={},
+        labels={LABEL_BLUEPRINT: 'Blueprint'},
+        depends_on=[]
+    )
 
-    def __init__(self):
-        self.labels[LABEL_BLUEPRINT] = self.__class__.name
-        self.labels['org.mrmat.test'] = 'foo'
+    def __init__(self, name: Optional[str] = None, schema: Optional[BlueprintSchema] = None):
+        self._kind = 'base'
+        self._schema = schema or self._defaults
+        self._schema.name = name or self._defaults.name
+        if schema:
+            self._schema.merge_defaults(self._defaults)
+
+    @property
+    def name(self):
+        return self._schema.name
+
+    @property
+    def platform(self):
+        return self._schema.platform
+
+    @property
+    def image(self):
+        return self._schema.image
+
+    @property
+    def labels(self):
+        return self._schema.labels
+
+    @property
+    def volumes(self):
+        return self._schema.volumes
+
+    @property
+    def environment(self):
+        return self._schema.environment
+
+    @property
+    def ports(self):
+        return self._schema.ports
+
+    @property
+    def depends_on(self):
+        return self._schema.depends_on
 
     @classmethod
-    def cli(cls, parser):
+    def cli_prepare(cls, parser):
         pass
 
     @classmethod
-    def from_schema(cls, runtime, name, schema):
-        instance = cls()
-        instance.name = name
-        instance.image = schema.image or instance.image
-        return instance
-
-    @classmethod
-    def blueprint_list(cls, runtime, args: argparse.Namespace):
-        table = Table(title='Available Blueprints', box=ROUNDED)
-        table.add_column('Blueprint')
-        table.add_column('Description')
-        [table.add_row(name, bp.description) for name, bp in runtime.available_blueprints.items()]
-        console.print(table)
-
-    def create(self, runtime, args: argparse.Namespace):
-        service = runtime.platform.service_create(blueprint=self)
-        console.print(f'Service {self.name} of kind {self.kind} created')
-        return service
-
-    def list(self, runtime, args: argparse.Namespace):
-        console.print(f'Listing services of kind {self.kind}')
-
-    def remove(self, runtime, args: argparse.Namespace):
-        runtime.platform.service_remove(blueprint=self)
-        console.print(f'Service {self.name} of kind {self.kind} removed')
+    def cli_assess(cls, args: Namespace):
+        pass

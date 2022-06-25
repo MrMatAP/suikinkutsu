@@ -23,11 +23,12 @@
 from water import console
 from water.outputs.output import Output
 from rich.table import Table
+from rich.tree import Tree
+from rich.columns import Columns
 from rich.box import ROUNDED
 
 
 class DefaultOutput(Output):
-
     name: str = 'DefaultOutput'
 
     def exception(self, ex: Exception):
@@ -52,6 +53,7 @@ class DefaultOutput(Output):
         table.add_row('output', runtime.output.name, runtime.output_source.value)
         table.add_row('platform', runtime.platform.name, runtime.platform_source.value)
         table.add_row('recipe_file', str(runtime.recipe_file), runtime.recipe_file_source.value)
+        table.add_row('secrets_file', str(runtime.secrets_file), runtime.secrets_file_source.value)
         console.print(table)
 
     def platform_list(self, runtime):
@@ -66,12 +68,32 @@ class DefaultOutput(Output):
         console.print(table)
 
     def cook_show(self, runtime):
-        table = Table(title='Recipe', box=ROUNDED)
-        table.add_column('Name')
-        [table.add_row(name)
-         for name in runtime.recipe.blueprints.keys()]
+        tree = Tree('Recipe')
+        for blueprint in runtime.recipe.blueprints.values():
+            node = tree.add(blueprint.name)
+            node.add(Columns(['[bold]Kind:[/bold]', blueprint.kind], width=80))
+            # node.add(Columns(['[bold]Platform:[/bold]'], blueprint.platform))
+            node.add(Columns(['[bold]Image:[/bold]', blueprint.image], width=80))
+
+            labels_node = node.add('[bold]Labels:[/bold]')
+            [labels_node.add(Columns([f'[bold]{k}:[/bold]', v], width=80)) for k, v in blueprint.labels.items()]
+
+            volumes_node = node.add('[bold]Volumes:[/bold]')
+            [volumes_node.add(Columns([f'[bold]{k}:[/bold]', v], width=80)) for k, v in blueprint.volumes.items()]
+
+            env_node = node.add('[bold]Environment:[/bold]')
+            [env_node.add(Columns([f'[bold]{k}:[/bold]', v], width=80)) for k, v in blueprint.environment.items()]
+
+            ports_node = node.add('[bold]Ports:[/bold]')
+            [ports_node.add(Columns([f'[bold]{k}:[/bold]', v], width=80)) for k, v in blueprint.ports.items()]
+
+            depends_on_node = node.add('[bold]Depends on:[/bold]')
+            [depends_on_node.add(Columns([f'[bold]Blueprint:[/bold]', v], width=80)) for v in blueprint.depends_on]
+        console.print(tree)
+
+    def blueprint_list(self, runtime):
+        table = Table(title='Available Blueprints', box=ROUNDED)
+        table.add_column('Blueprint')
+        table.add_column('Description')
+        [table.add_row(name, bp.description) for name, bp in runtime.available_blueprints.items()]
         console.print(table)
-
-
-
-

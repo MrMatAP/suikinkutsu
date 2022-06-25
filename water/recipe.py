@@ -22,14 +22,10 @@
 
 from typing import Dict, Type
 import yaml
-from pydantic import BaseModel
 from water import console
 from water.exceptions import MurkyWaterException
-from water.blueprints import BlueprintSchema, Blueprint
-
-
-class RecipeSchema(BaseModel):
-    blueprints: Dict[str, BlueprintSchema]
+from water.blueprints import Blueprint
+from water.schema import RecipeSchema
 
 
 class Recipe:
@@ -44,9 +40,9 @@ class Recipe:
             parsed_recipe = RecipeSchema.parse_obj(raw_recipe)
             for name, bp_schema in parsed_recipe.blueprints.items():
                 if bp_schema.kind not in runtime.available_blueprints:
-                    raise MurkyWaterException(msg=f'Blueprint {bp_schema.kind} for instance {name} is not known')
-                blueprint = runtime.available_blueprints[bp_schema.kind].from_schema(runtime, name, bp_schema)
-                self.blueprints[name] = blueprint
+                    raise MurkyWaterException(msg=f'Blueprint {bp_schema.kind} for instance {name} is not available')
+                blueprint_instance = runtime.available_blueprints[bp_schema.kind](name, bp_schema)
+                self.blueprints[name] = blueprint_instance
         except Exception as e:
             console.print_exception()
 

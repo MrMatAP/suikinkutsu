@@ -22,13 +22,9 @@
 
 import sys
 import os
-import typing
 import argparse
 
 from water import __version__, MurkyWaterException, console
-import water.blueprints
-import water.platforms
-import water.outputs
 from water.runtime import Runtime
 
 
@@ -38,13 +34,21 @@ def config_show(runtime: Runtime, args: argparse.Namespace) -> int:
 
 
 def config_set(runtime: Runtime, args: argparse.Namespace) -> int:
-    runtime._config_save()
+    runtime.config_dir = args.set_config_dir
+    runtime.config_output = args.set_config_output
+    runtime.config_save()
     return 0
 
 
 def platform_list(runtime: Runtime, args: argparse.Namespace) -> int:
     runtime.output.platform_list(runtime)
     return 0
+
+
+def blueprint_list(runtime: Runtime, args: argparse.Namespace) -> int:
+    runtime.output.blueprint_list(runtime)
+    return 0
+
 
 def instance_list(runtime: Runtime, args: argparse.Namespace) -> int:
     runtime.platform.service_list()
@@ -68,18 +72,18 @@ def cook_up(runtime: Runtime, args: argparse.Namespace) -> int:
         return 1
 
 
-def cook_down(runtime: Runtime, args: argparse.Namespace) -> int:
+def cook_show(runtime: Runtime, args: argparse.Namespace) -> int:
     try:
-        [blueprint.remove(runtime, args) for blueprint in runtime.recipe.blueprints]
+        runtime.output.cook_show(runtime)
         return 0
     except Exception as e:
         console.print_exception()
         return 1
 
 
-def cook_show(runtime: Runtime, args: argparse.Namespace) -> int:
+def cook_down(runtime: Runtime, args: argparse.Namespace) -> int:
     try:
-        runtime.output.cook_show(runtime)
+        [blueprint.remove(runtime, args) for blueprint in runtime.recipe.blueprints]
         return 0
     except Exception as e:
         console.print_exception()
@@ -109,6 +113,10 @@ def main() -> int:
                                    dest='set_config_output',
                                    required=False,
                                    help='Persist the preferred output style in the water configuration file')
+    config_set_parser.add_argument('--platform',
+                                   dest='set_config_platform',
+                                   required=False,
+                                   help='Persist the preferred platform in the water configuration file')
     config_set_parser.set_defaults(cmd=config_set)
 
     pf_parser = subparsers.add_parser(name='platform', help='Platform Commands')
@@ -119,7 +127,7 @@ def main() -> int:
     bp_parser = subparsers.add_parser(name='blueprint', help='Blueprint Commands')
     bp_subparser = bp_parser.add_subparsers()
     bp_list_parser = bp_subparser.add_parser('list', help='List available blueprints')
-    bp_list_parser.set_defaults(cmd=water.blueprints.Blueprint.blueprint_list)
+    bp_list_parser.set_defaults(cmd=blueprint_list)
 
     instance_parser = subparsers.add_parser(name='instance', help='Instance Commands')
     instance_subparser = instance_parser.add_subparsers()
@@ -142,7 +150,7 @@ def main() -> int:
 
     try:
         runtime = Runtime()
-        [blueprint.cli(subparsers) for blueprint in runtime.available_blueprints.values()]
+        [blueprint.cli_prepare(subparsers) for blueprint in runtime.available_blueprints.values()]
         [platform.cli(subparsers) for platform in runtime.available_platforms.values()]
         runtime.cli_prepare(parser)
         args = parser.parse_args()

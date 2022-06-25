@@ -54,6 +54,10 @@ class Output(abc.ABC):
     def cook_show(self, runtime):
         pass
 
+    @abc.abstractmethod
+    def blueprint_list(self, runtime):
+        pass
+
     @staticmethod
     def _exception_dict(ex: Exception):
         return {

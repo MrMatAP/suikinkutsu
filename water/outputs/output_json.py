@@ -51,3 +51,5 @@ class JSONOutput(Output):
     def cook_show(self, runtime):
         pass
 
+    def blueprint_list(self, runtime):
+        pass

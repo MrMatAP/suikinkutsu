@@ -20,48 +20,50 @@
 #  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 #  SOFTWARE.
 
-import argparse
-from typing import Dict
+from argparse import Namespace
+import secrets
 
-from water import console
+from schema import BlueprintSchema
 from water.blueprints.blueprint import Blueprint
+from constants import LABEL_BLUEPRINT, LABEL_CREATED_BY
 
 
 class Keycloak(Blueprint):
 
-    name: str = 'keycloak'
     kind: str = 'keycloak'
     description: str = 'Keycloak is an Identity Provider implementing OAuth 2 and SAML authentication/authorisation'
-    image: str = 'jboss/keycloak:16.1.1'
-    volumes: Dict[str, str] = {
-        'import': '/import'
-    }
-    environment: Dict[str, str] = {
-        'DB_VENDOR': 'postgres',
-        'DB_ADDR': 'pg',
-        'DB_DATABASE': 'localdb',
-        'DB_USER': 'keycloak',
-        'DB_PASSWORD': 'keycloak',
-        'DB_SCHEMA': 'keycloak',
-        'KEYCLOAK_USER': 'admin',
-        'KEYCLOAK_PASSWORD': 'foobar'
-    }
-    ports: Dict[str, str] = {
-        '127.0.0.1:8080': '8080'
-    }
-    labels: Dict[str, str] = {
-        'org.mrmat.water.blueprint': 'KeyCloak'
-    }
+    _defaults: BlueprintSchema = BlueprintSchema(
+        kind='keycloak',
+        name='kc',
+        image='jboss/keycloak:16.1.1',
+        volumes={'import': '/import'},
+        environment={
+            # 'DB_VENDOR': 'postgres',
+            # 'DB_ADDR': 'pg',
+            # 'DB_DATABASE': 'localdb',
+            # 'DB_USER': 'keycloak',
+            # 'DB_PASSWORD': 'keycloak',
+            # 'DB_SCHEMA': 'keycloak',
+            'KEYCLOAK_USER': 'admin',
+            'KEYCLOAK_PASSWORD': secrets.token_urlsafe(16)
+        },
+        ports={'127.0.0.1:8080': '8080'},
+        labels={
+            LABEL_BLUEPRINT: 'keycloak',
+            LABEL_CREATED_BY: 'water'
+        },
+        depends_on=[]
+    )
 
     @classmethod
-    def cli(cls, parser):
-        kc_parser = parser.add_parser(name='keycloak', help='Keycloak Commands')
+    def cli_prepare(cls, parser):
+        kc_parser = parser.add_parser(name='kc', help='Keycloak Commands')
         kc_subparser = kc_parser.add_subparsers()
         kc_create_parser = kc_subparser.add_parser(name='create', help='Create a Keycloak instance')
         kc_create_parser.set_defaults(cmd=cls.kc_create)
         kc_create_parser.add_argument('-n', '--name',
                                       dest='name',
-                                      default=cls.name,
+                                      default=cls._defaults.name,
                                       required=False,
                                       help='Instance name')
         kc_list_parser = kc_subparser.add_parser(name='list', help='List all keycloak instances')
@@ -75,28 +77,20 @@ class Keycloak(Blueprint):
                                       help='Instance name')
 
     @classmethod
-    def kc_create(cls, runtime, args):
-        instance = cls()
-        instance.name = args.name
-        instance.create(runtime, args)
+    def cli_assess(cls, args: Namespace):
+        super().cli_assess(args)
 
     @classmethod
-    def kc_list(cls, runtime, args):
-        instance = cls()
-        instance.name = args.name
-        instance.list(runtime, args)
+    def kc_create(cls, runtime, args: Namespace):
+        instance = cls(name=args.name)
+        runtime.platform.service_create(instance)
 
     @classmethod
-    def kc_remove(cls, runtime, args):
-        instance = cls()
-        instance.name = args.name
-        instance.remove(runtime, args)
+    def kc_list(cls, runtime, args: Namespace):
+        instance = cls(name=args.name)
+        runtime.platform.service_list(instance)
 
-    def create(self, runtime, args: argparse.Namespace):
-        pass
-
-    def list(self, runtime, args: argparse.Namespace):
-        pass
-
-    def remove(self, runtime, args: argparse.Namespace):
-        pass
+    @classmethod
+    def kc_remove(cls, runtime, args: Namespace):
+        instance = cls(name=args.name)
+        runtime.platform.service_remove(instance)

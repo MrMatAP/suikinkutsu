@@ -20,39 +20,47 @@
 #  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 #  SOFTWARE.
 
-import argparse
-from typing import Dict
+from argparse import Namespace
 import secrets
+import psycopg2
+from psycopg2 import sql
 
+from schema import BlueprintSchema
+from water import MurkyWaterException
 from water.blueprints.blueprint import Blueprint
+from constants import LABEL_BLUEPRINT, LABEL_CREATED_BY
 
 
 class PostgreSQL(Blueprint):
-
-    name: str = 'pg'
     kind: str = 'postgres'
     description: str = 'PostgreSQL is a modern relational database'
-
-    image: str = 'postgres:14.3-alpine'
-    volumes: Dict[str, str] = {
-        'pg_datavol': '/var/lib/postgresql/data',
-    }
-    environment: Dict[str, str] = {
-        'POSTGRES_DB': 'localdb',
-        'POSTGRES_PASSWORD': secrets.token_urlsafe(16),
-        'PGDATA': '/var/lib/postgresql/data/pgdata'
-    }
-    ports: Dict[str, str] = {'127.0.0.1:5432': '5432'}
+    _defaults: BlueprintSchema = BlueprintSchema(
+        kind='postgres',
+        name='pg',
+        image='postgres:14.3-alpine',
+        volumes={'pg_datavol': '/var/lib/postgresql/data'},
+        environment={
+            'POSTGRES_DB': 'localdb',
+            'POSTGRES_PASSWORD': secrets.token_urlsafe(16),
+            'PGDATA': '/var/lib/postgresql/data/pgdata'
+        },
+        ports={'127.0.0.1:5432': '5432'},
+        labels={
+            LABEL_BLUEPRINT: 'postgres',
+            LABEL_CREATED_BY: 'water'
+        },
+        depends_on=[]
+    )
 
     @classmethod
-    def cli(cls, parser):
+    def cli_prepare(cls, parser):
         pg_parser = parser.add_parser(name='pg', help='PostgreSQL Commands')
         pg_subparser = pg_parser.add_subparsers()
         pg_create_parser = pg_subparser.add_parser(name='create', help='Create a PostgreSQL instance')
         pg_create_parser.set_defaults(cmd=cls.pg_create)
         pg_create_parser.add_argument('-n', '--instance-name',
                                       dest='name',
-                                      default=cls.name,
+                                      default=cls._defaults.name,
                                       required=False,
                                       help='Instance name')
         pg_list_parser = pg_subparser.add_parser(name='list', help='List PostgreSQL instances')
@@ -65,36 +73,69 @@ class PostgreSQL(Blueprint):
                                       help='Instance name')
         pg_account_parser = pg_subparser.add_parser(name='account', help='PostgreSQL Account Commands')
         pg_account_subparser = pg_account_parser.add_subparsers()
-        pg_account_add_parser = pg_account_subparser.add_parser(name='add', help='Add an account')
-        pg_account_add_parser.add_argument('-n', '--instance-name',
-                                           dest='name',
-                                           required=True,
-                                           help='Instance name')
-        pg_account_add_parser.add_argument('-a', '--account-name',
-                                           dest='account_name',
-                                           required=True,
-                                           help='Account name')
-        pg_account_add_parser.set_defaults(cmd=cls.pg_account_add)
+        pg_account_create_parser = pg_account_subparser.add_parser(name='create', help='Create an account')
+        pg_account_create_parser.add_argument('-n', '--instance-name',
+                                              dest='name',
+                                              required=True,
+                                              help='Instance name')
+        pg_account_create_parser.add_argument('-a', '--account-name',
+                                              dest='account_name',
+                                              required=True,
+                                              help='Account name')
+        pg_account_create_parser.add_argument('-p', '--account-password',
+                                              dest='account_password',
+                                              required=False,
+                                              default=secrets.token_urlsafe(16),
+                                              help='Account password')
+        pg_account_create_parser.set_defaults(cmd=cls.pg_account_create)
 
     @classmethod
-    def pg_account_add(cls, runtime, args):
-        pass
+    def cli_assess(cls, args: Namespace):
+        super().cli_assess(args)
 
     @classmethod
-    def pg_create(cls, runtime, args: argparse.Namespace):
-        instance = cls()
-        instance.name = args.name
-        instance.create(runtime, args)
+    def pg_create(cls, runtime, args: Namespace):
+        instance = cls(name=args.name)
+        runtime.platform.service_create(instance)
+        runtime_secrets = runtime.secrets
+        if instance.name not in runtime_secrets:
+            runtime_secrets[instance.name] = {
+                'connection': f'postgresql://localhost:5432/{instance.environment.get("POSTGRES_DB")}',
+                'accounts': {
+                    'postgres': instance.environment.get('POSTGRES_PASSWORD')
+                }
+            }
+        else:
+            runtime_secrets[instance.name]['connection'] = f'postgresql://localhost:5432/{instance.environment.get("POSTGRES_DB")}'
+            runtime_secrets_accounts = runtime_secrets[instance.name]['accounts']
+            runtime_secrets_accounts['postgres'] = instance.environment.get('POSTGRES_PASSWORD')
+        runtime.secrets_save()
 
     @classmethod
-    def pg_list(cls, runtime, args: argparse.Namespace):
-        instance = cls()
-        instance.name = args.name
-        instance.list(runtime, args)
+    def pg_list(cls, runtime, args: Namespace):
+        instance = cls(name=args.name)
+        runtime.platform.service_create(instance)
 
     @classmethod
-    def pg_remove(cls, runtime, args: argparse.Namespace):
-        instance = cls()
-        instance.name = args.name
-        instance.remove(runtime, args)
+    def pg_remove(cls, runtime, args: Namespace):
+        instance = cls(name=args.name)
+        runtime.platform.service_remove(instance)
 
+    @classmethod
+    def pg_account_create(cls, runtime, args):
+        instance_secrets = runtime.secrets.get(args.name)
+        if instance_secrets is None:
+            raise MurkyWaterException(msg='No secrets for this instance')
+        conn = psycopg2.connect(instance_secrets.get('connection'),
+                                user='postgres',
+                                password=instance_secrets['accounts'].get('postgres'))
+        cur = conn.cursor()
+        query = sql.SQL('CREATE ROLE {} ENCRYPTED PASSWORD %s LOGIN').format(sql.Identifier(args.account_name))
+        cur.execute(query, (args.account_password,))
+        conn.commit()
+        cur.close()
+        conn.close()
+        runtime_secrets = runtime.secrets
+        runtime_secrets_accounts = runtime_secrets[args.name]['accounts']
+        runtime_secrets_accounts[args.account_name] = args.account_password
+        runtime.secrets_save()
