@@ -44,7 +44,7 @@ class PostgreSQL(Blueprint):
             'POSTGRES_PASSWORD': secrets.token_urlsafe(16),
             'PGDATA': '/var/lib/postgresql/data/pgdata'
         },
-        ports={'127.0.0.1:5432': '5432'},
+        ports={'5432': '5432'},
         labels={
             LABEL_BLUEPRINT: 'postgres',
             LABEL_CREATED_BY: 'water'
@@ -88,6 +88,17 @@ class PostgreSQL(Blueprint):
                                               default=secrets.token_urlsafe(16),
                                               help='Account password')
         pg_account_create_parser.set_defaults(cmd=cls.pg_account_create)
+
+        pg_backup_parser = pg_subparser.add_parser(name='backup', help='PostgreSQL backup')
+        pg_backup_parser.add_argument('-n', '--instance-name',
+                                      dest='name',
+                                      required=True,
+                                      help='Instance name')
+        pg_backup_parser.add_argument('-o', '--output-dir',
+                                      dest='output_dir',
+                                      required=True,
+                                      help='Output directory')
+        pg_backup_parser.set_defaults(cmd=cls.pg_backup)
 
     @classmethod
     def cli_assess(cls, args: Namespace):
@@ -139,3 +150,12 @@ class PostgreSQL(Blueprint):
         runtime_secrets_accounts = runtime_secrets[args.name]['accounts']
         runtime_secrets_accounts[args.account_name] = args.account_password
         runtime.secrets_save()
+
+    @classmethod
+    def pg_backup(cls, runtime, args):
+        instance_secrets = runtime.secrets.get(args.name)
+        if instance_secrets is None:
+            raise MurkyWaterException(msg='No secrets for this instance')
+        # TODO:
+        # nerdctl exec -it pg pg_dumpall -h localhost -U postgres -l localdb
+
