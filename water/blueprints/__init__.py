@@ -23,3 +23,4 @@
 from .blueprint import Blueprint
 from .postgres import PostgreSQL
 from .keycloak import Keycloak
+from .jaeger import Jaeger
