@@ -24,7 +24,7 @@ import os
 import pathlib
 import enum
 import json
-from typing import Dict, Type, ClassVar
+from typing import Dict, Type, ClassVar, Optional
 from argparse import ArgumentParser, Namespace
 
 from water.outputs import WaterOutput
@@ -57,10 +57,11 @@ class Runtime:
         self.config_file_source = Source.DEFAULT
         self.config_dir = pathlib.Path(DEFAULT_CONFIG_DIR)
         self.config_dir_source = Source.DEFAULT
-        self._available_outputs = {clazz.name: clazz for clazz in WaterOutput.__subclasses__()}
+        self._available_outputs = self._find_all_subclasses(WaterOutput)
         self.output = DEFAULT_OUTPUT_CLASS
         self.output_source = Source.DEFAULT
-        self._available_blueprints = {cls.kind: cls for cls in Blueprint.__subclasses__()}
+        # TODO: Need to consolidate kind vs name
+        self._available_blueprints = self._find_all_subclasses(Blueprint, pk='kind')
         self._available_platforms = self._find_all_subclasses(Platform)
         self.platform = DEFAULT_PLATFORM_CLASS
         self.platform_source = Source.DEFAULT
@@ -94,10 +95,20 @@ class Runtime:
             self.secrets_file = os.getenv(ENV_SECRETS_FILE)
             self.secrets_file_source = Source.ENVIRONMENT
 
-    def _find_all_subclasses(self, base: ClassVar):
+    # TODO: Need to consolidate kind vs name
+    def _find_all_subclasses(self, base: ClassVar, pk: Optional[str] = 'name'):
+        """
+        Recursively find all subclasses
+        Args:
+            base: The base class whose subclasses to find
+
+        Returns:
+            A dict mapping the fully qualified class name to an instance
+        """
         all_subclasses = {}
         for subclass in base.__subclasses__():
-            all_subclasses[subclass.name] = subclass
+            identifier = getattr(subclass, pk) if hasattr(subclass, pk) else f'{subclass.__module__}.{subclass.__name__}'
+            all_subclasses[identifier] = subclass()
             all_subclasses.update(self._find_all_subclasses(subclass))
         return all_subclasses
 
@@ -211,7 +222,7 @@ class Runtime:
         return self._available_outputs
 
     @property
-    def output(self) -> WaterOutput:
+    def output(self) -> Type[WaterOutput]:
         return self._output
 
     @output.setter
@@ -219,7 +230,7 @@ class Runtime:
         if value not in self.available_outputs:
             raise ValueError(f'Configured output {value} is not available. Pick one of '
                              f'{str.join(",", self.available_outputs.keys())}')
-        self._output = self.available_outputs.get(value)()
+        self._output = self.available_outputs.get(value)
 
     @property
     def output_source(self):
@@ -230,7 +241,7 @@ class Runtime:
         self._output_source = value
 
     @property
-    def available_blueprints(self) -> Dict[str, Type[Blueprint]]:
+    def available_blueprints(self) -> Dict[str, Blueprint]:
         return self._available_blueprints
 
     @property
@@ -244,7 +255,7 @@ class Runtime:
     @platform.setter
     def platform(self, value: str):
         if value not in self.available_platforms:
-            raise ValueError(f'Configured platform {value} is not available. Pick on of '
+            raise ValueError(f'Configured platform {value} is not available. Pick one of '
                              f'{str.join(",", self.available_platforms.keys())}')
         self._platform = self.available_platforms.get(value)
 

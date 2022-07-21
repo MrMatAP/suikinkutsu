@@ -33,7 +33,7 @@ console = Console()
 class HumanWaterOutput(WaterOutput):
     """Output for human users"""
 
-    name: str = 'DefaultOutput'
+    name: str = 'human'
 
     def exception(self, ex: Exception) -> None:
         console.print_exception()
