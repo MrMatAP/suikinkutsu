@@ -1,3 +1,4 @@
+
 #  MIT License
 #
 #  Copyright (c) 2022 Mathieu Imfeld
@@ -14,7 +15,7 @@
 #
 #  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 #  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-#  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+#  FITNESS FOR A PARTICULAR PURPOSE AND NON INFRINGEMENT. IN NO EVENT SHALL THE
 #  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 #  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 #  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
@@ -25,10 +26,10 @@ import secrets
 import psycopg2
 from psycopg2 import sql
 
-from schema import BlueprintSchema
-from water import MurkyWaterException
-from water.blueprints.blueprint import Blueprint
-from constants import LABEL_BLUEPRINT, LABEL_CREATED_BY
+from water.schema import BlueprintSchema
+from water.exceptions import MurkyWaterException
+from water.constants import LABEL_BLUEPRINT, LABEL_CREATED_BY
+from .blueprint import Blueprint
 
 
 class PostgreSQL(Blueprint):
@@ -124,8 +125,7 @@ class PostgreSQL(Blueprint):
 
     @classmethod
     def pg_list(cls, runtime, args: Namespace):
-        instance = cls(name=args.name)
-        runtime.platform.service_create(instance)
+        runtime.platform.service_list(cls.kind)
 
     @classmethod
     def pg_remove(cls, runtime, args: Namespace):
