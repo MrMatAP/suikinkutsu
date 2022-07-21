@@ -27,7 +27,7 @@ import json
 from typing import Dict, Type
 from argparse import ArgumentParser, Namespace
 
-from water.outputs import Output
+from water.outputs import WaterOutput
 from water.blueprints import Blueprint
 from water.platforms import Platform
 from water.recipe import Recipe
@@ -57,7 +57,7 @@ class Runtime:
         self.config_file_source = Source.DEFAULT
         self.config_dir = pathlib.Path(DEFAULT_CONFIG_DIR)
         self.config_dir_source = Source.DEFAULT
-        self._available_outputs = {clazz.name: clazz for clazz in Output.__subclasses__()}
+        self._available_outputs = {clazz.name: clazz for clazz in WaterOutput.__subclasses__()}
         self.output = DEFAULT_OUTPUT_CLASS
         self.output_source = Source.DEFAULT
         self._available_blueprints = {cls.kind: cls for cls in Blueprint.__subclasses__()}
@@ -70,6 +70,8 @@ class Runtime:
         self.secrets_file = self.config_dir / f'{self.recipe_file.parent.name}.json'
         self.secrets_file_source = Source.DEFAULT
         self._secrets = {}
+        # TODO
+        self.raw_config = WaterConfiguration.construct()
 
         if ENV_CONFIG_FILE in os.environ:
             self.config_file = pathlib.Path(os.getenv(ENV_CONFIG_FILE))
@@ -137,16 +139,16 @@ class Runtime:
         self.secrets_load()
 
     def config_load(self):
-        raw_config = WaterConfiguration.construct()
+        self.raw_config = WaterConfiguration.construct()
         if self.config_file.exists():
             raw_config = WaterConfiguration.parse_file(self.config_file)
-        if raw_config.config_dir:
-            self.config_dir = pathlib.Path(raw_config.config_dir)
+        if self.raw_config.config_dir:
+            self.config_dir = pathlib.Path(self.raw_config.config_dir)
             self.config_dir_source = Source.CONFIGURATION
-        if raw_config.default_output:
-            self.output = raw_config.default_output
+        if self.raw_config.default_output:
+            self.output = self.raw_config.default_output
             self.output_source = Source.CONFIGURATION
-        if raw_config.default_platform:
+        if self.raw_config.default_platform:
             self.platform = raw_config.default_platform
             self.platform_source = Source.CONFIGURATION
 
@@ -198,11 +200,11 @@ class Runtime:
         self._config_dir_source = value
 
     @property
-    def available_outputs(self) -> Dict[str, Type[Output]]:
+    def available_outputs(self) -> Dict[str, Type[WaterOutput]]:
         return self._available_outputs
 
     @property
-    def output(self) -> Output:
+    def output(self) -> WaterOutput:
         return self._output
 
     @output.setter

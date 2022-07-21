@@ -22,7 +22,6 @@
 
 from typing import Dict, Type
 import yaml
-from water import console
 from water.exceptions import MurkyWaterException
 from water.blueprints import Blueprint
 from water.schema import RecipeSchema
@@ -44,7 +43,8 @@ class Recipe:
                 blueprint_instance = runtime.available_blueprints[bp_schema.kind](name, bp_schema)
                 self.blueprints[name] = blueprint_instance
         except Exception as e:
-            console.print_exception()
+            pass
+            #console.print_exception()
 
     @property
     def blueprints(self) -> Dict[str, Type[Blueprint]]:

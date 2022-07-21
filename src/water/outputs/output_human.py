@@ -20,28 +20,39 @@
 #  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 #  SOFTWARE.
 
-from water import console
-from water.outputs.output import Output
+from .output_base import WaterOutput, WaterDisplayable
+from rich.console import Console
 from rich.table import Table
 from rich.tree import Tree
 from rich.columns import Columns
 from rich.box import ROUNDED
 
+console = Console()
 
-class DefaultOutput(Output):
+
+class HumanWaterOutput(WaterOutput):
+    """Output for human users"""
+
     name: str = 'DefaultOutput'
 
-    def exception(self, ex: Exception):
+    def exception(self, ex: Exception) -> None:
         console.print_exception()
 
-    def info(self, msg: str):
+    def info(self, msg: str) -> None:
         console.print(msg)
 
-    def warning(self, msg: str):
+    def warning(self, msg: str) -> None:
         console.print(f'[bold yellow]Warning:[/bold yellow] {msg}')
 
-    def error(self, msg: str):
+    def error(self, msg: str) -> None:
         console.print(f'[bold red]Error:[/bold red] {msg}')
+
+    def displayable(self, displayable: WaterDisplayable):
+        data = displayable.display_dict()
+        table = Table(title='Test', box=ROUNDED)
+        [table.add_column(column) for column in data.keys()]
+        [table.add_row(row) for row in data.values()]
+        console.print(table)
 
     def config(self, runtime):
         table = Table(title='Configuration', box=ROUNDED)
@@ -97,3 +108,9 @@ class DefaultOutput(Output):
         table.add_column('Description')
         [table.add_row(name, bp.description) for name, bp in runtime.available_blueprints.items()]
         console.print(table)
+
+    def __repr__(self):
+        return 'HumanOutput()'
+
+    def __str__(self):
+        return 'Output for human users'

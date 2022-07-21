@@ -21,26 +21,31 @@
 #  SOFTWARE.
 
 import json
-from .output import Output
+
+from . import WaterDisplayable
+from .output_base import WaterOutput
 
 
-class JSONOutput(Output):
+class JSONWaterOutput(WaterOutput):
     name: str = 'json'
 
-    def exception(self, ex: Exception):
+    def exception(self, ex: Exception) -> None:
         ex_dict = self._exception_dict(ex)
         print(json.dumps(ex_dict))
 
-    def info(self, msg: str):
+    def info(self, msg: str) -> None:
         print(json.dumps({'INFO': msg}))
 
-    def warning(self, msg: str):
+    def warning(self, msg: str) -> None:
         print(json.dumps({'WARNING': msg}))
 
-    def error(self, msg: str):
+    def error(self, msg: str) -> None:
         print(json.dumps({'ERROR': msg}))
 
-    def config(self, runtime):
+    def displayable(self, displayable: WaterDisplayable):
+        print('JSON')
+
+    def config(self, runtime) -> None:
         config_dict = self._config_dict(runtime)
         print(json.dumps(config_dict))
 

@@ -21,10 +21,12 @@
 #  SOFTWARE.
 
 import yaml
-from .output import Output
+
+from . import WaterDisplayable
+from .output_base import WaterOutput
 
 
-class YAMLOutput(Output):
+class YAMLWaterOutput(WaterOutput):
     name: str = 'yaml'
 
     def exception(self, ex: Exception):
@@ -39,6 +41,9 @@ class YAMLOutput(Output):
 
     def error(self, msg: str):
         print(yaml.safe_dump({'ERROR': msg}))
+
+    def displayable(self, displayable: WaterDisplayable):
+        print('YAML')
 
     def config(self, runtime):
         config_dict = self._config_dict(runtime)

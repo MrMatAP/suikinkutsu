@@ -20,9 +20,7 @@
 #  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 #  SOFTWARE.
 
-import os
 import importlib.metadata
-from rich.console import Console
 from .exceptions import MurkyWaterException
 
 try:
@@ -30,5 +28,3 @@ try:
 except importlib.metadata.PackageNotFoundError:
     # You have not yet installed this as a package, likely because you're hacking on it in some IDE
     __version__ = '0.0.0.dev0'
-
-console = Console()

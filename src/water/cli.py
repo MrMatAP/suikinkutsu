@@ -24,12 +24,12 @@ import sys
 import os
 import argparse
 
-from water import __version__, MurkyWaterException, console
+from water import __version__, MurkyWaterException
 from water.runtime import Runtime
 
 
 def config_show(runtime: Runtime, args: argparse.Namespace) -> int:
-    runtime.output.config(runtime)
+    runtime.output.displayable(runtime.raw_config)
     return 0
 
 
@@ -68,7 +68,7 @@ def cook_up(runtime: Runtime, args: argparse.Namespace) -> int:
         #         blueprint_model.merge_defaults(water.blueprints.postgres.PostgreSQL.defaults)
         # console.print(parsed_recipe)
     except Exception as e:
-        console.print_exception()
+        #console.print_exception()
         return 1
 
 
@@ -77,7 +77,7 @@ def cook_show(runtime: Runtime, args: argparse.Namespace) -> int:
         runtime.output.cook_show(runtime)
         return 0
     except Exception as e:
-        console.print_exception()
+        #console.print_exception()
         return 1
 
 
@@ -86,7 +86,7 @@ def cook_down(runtime: Runtime, args: argparse.Namespace) -> int:
         [blueprint.remove(runtime, args) for blueprint in runtime.recipe.blueprints]
         return 0
     except Exception as e:
-        console.print_exception()
+        #console.print_exception()
         return 1
 
 
@@ -162,7 +162,7 @@ def main() -> int:
             parser.print_help()
         return 0
     except MurkyWaterException as mwe:
-        console.print_exception()
+        #console.print_exception()
         return mwe.code
 
 

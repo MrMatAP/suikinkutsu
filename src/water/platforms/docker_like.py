@@ -24,10 +24,11 @@ import typing
 from typing import List, Dict, Optional
 import datetime
 import json
-from pydantic import BaseModel, Field, parse_raw_as
+from pydantic import BaseModel, Field
 
-from water import console, MurkyWaterException
+from water import MurkyWaterException
 from water.platforms.platform import Platform
+from water.schema import InstanceSchema
 
 
 class DockerInspectionStateSchema(BaseModel):
@@ -91,7 +92,7 @@ class DockerLike:
                        name])
         info = self._execute(['volume', 'inspect', name])
 
-        console.print(f'Volume {name} successfully created')
+        #console.print(f'Volume {name} successfully created')
 
     def volume_list(self):
         result = self._execute(['volume', 'ls', '--format', '{{ json . }}'])
@@ -111,7 +112,7 @@ class DockerLike:
 
     def volume_remove(self, name: str):
         self._execute(['volume', 'rm', name])
-        console.print(f'Volume {name} successfully removed')
+        #console.print(f'Volume {name} successfully removed')
 
     def service_create(self, blueprint):
         cmd = ['container', 'run', '-d', '--name', blueprint.name]
@@ -127,14 +128,18 @@ class DockerLike:
         cmd.append(blueprint.image)
         self._execute(cmd)
 
-    def service_list(self, name: Optional[str] = None):
+    def service_list(self, kind: Optional[str] = None) -> List[InstanceSchema]:
         result = self._execute(['container', 'ls', '--all', '--quiet'])
         container_ids = [container_id for container_id in result.stdout.split('\n') if container_id != '']
         if len(container_ids) == 0:
-            console.print('There are no containers defined on this platform')
-            return None
+            return []
         result = self._execute(['container', 'inspect', str.join(' ', container_ids)])
-        instances = parse_raw_as(List[DockerInspectionSchema], result.stdout)
+        raw_instances = json.loads(result.stdout)
+        instances = []
+        for raw_instance in raw_instances:
+            instances.append(InstanceSchema(id=raw_instance['Id'], state=raw_instance['State']['Status']))
+        return instances
+        #instances = parse_raw_as(List[DockerInspectionSchema], result.stdout)
         pass
 
         # result = self._execute(['container', 'ls', '--format', '{{ json . }}'])

@@ -21,25 +21,66 @@
 #  SOFTWARE.
 
 import abc
+from collections import OrderedDict
 
 
-class Output(abc.ABC):
+class WaterDisplayable(abc.ABC):
+
+    @abc.abstractmethod
+    def display_dict(self) -> OrderedDict:
+        """
+        Return an ordered dictionary used for displaying the datastructure implementing this method
+        Returns: An ordered dictionary
+        """
+        pass
+
+
+class WaterOutput(abc.ABC):
     name: str = 'BasePlatform'
 
     @abc.abstractmethod
-    def exception(self, ex: Exception):
+    def exception(self, ex: Exception) -> None:
+        """
+        Display an exception
+        Args:
+            ex: The exception to display
+        """
         pass
 
     @abc.abstractmethod
-    def info(self, msg: str):
+    def info(self, msg: str) -> None:
+        """
+        Display an informational message
+        Args:
+            msg: The informational message to display
+        """
         pass
 
     @abc.abstractmethod
-    def warning(self, msg: str):
+    def warning(self, msg: str) -> None:
+        """
+        Display a warning message
+        Args:
+            msg: The warning message to display
+        """
         pass
 
     @abc.abstractmethod
-    def error(self, msg: str):
+    def error(self, msg: str) -> None:
+        """
+        Display an error message
+        Args:
+            msg: The error message to display
+        """
+        pass
+
+    @abc.abstractmethod
+    def displayable(self, displayable: WaterDisplayable):
+        """
+        Display a displayable
+        Args:
+            displayable: The displayable to display
+        """
         pass
 
     @abc.abstractmethod
@@ -89,3 +130,9 @@ class Output(abc.ABC):
                 'description': platform.description
             }
             for platform in runtime.available_platforms]
+
+    def __repr__(self):
+        return 'Output()'
+
+    def __str__(self):
+        return 'Abstract base class for output'
