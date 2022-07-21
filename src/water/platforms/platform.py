@@ -26,7 +26,7 @@ import shutil
 import abc
 import subprocess
 import pathlib
-from argparse import ArgumentParser, Namespace
+from argparse import Namespace
 from water import MurkyWaterException
 
 
@@ -42,26 +42,36 @@ class Platform(abc.ABC):
         self._executable = pathlib.Path(executable_path) or None
         self._available = bool(self._executable)
 
+    @classmethod
+    def cli_prepare(cls, parser) -> None:
+        """
+        Hook to declare CLI arguments
+        Args:
+            parser: The ArgumentParser to attach CLI arguments to
+        """
+        pass
+
+    @classmethod
+    def cli_assess(cls, args: Namespace) -> None:
+        """
+        Hook to parse CLI arguments
+        Args:
+            args: The namespace containing the parsed CLI arguments
+        """
+        pass
+
     def executable(self) -> Optional[pathlib.Path]:
         return self._executable
 
     def available(self):
         return self._available
 
-    @classmethod
-    def cli(cls, parser: ArgumentParser):
-        pass
-
-    @classmethod
-    def cli_assess(cls, args: Namespace):
+    @abc.abstractmethod
+    def instance_list(self):
         pass
 
     @abc.abstractmethod
     def blueprint_create(self, blueprint):
-        pass
-
-    @abc.abstractmethod
-    def blueprint_list(self, blueprint):
         pass
 
     @abc.abstractmethod

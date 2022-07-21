@@ -20,14 +20,12 @@
 #  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 #  SOFTWARE.
 
-import typing
 from typing import List, Dict, Optional
-import datetime
 import json
-from pydantic import BaseModel, Field
 
 from water import MurkyWaterException
-from water.platforms.platform import Platform
+from .platform import Platform
+from water.instances import Instance
 from water.schema import InstanceSchema
 
 
@@ -47,8 +45,20 @@ class Docker(Platform):
     def blueprint_create(self, blueprint):
         pass
 
-    def blueprint_list(self, blueprint):
-        pass
+    def instance_list(self) -> List[Instance]:
+        result = self._execute(['container', 'ls', '--all', '--quiet'])
+        container_ids = [container_id for container_id in result.stdout.split('\n') if container_id != '']
+        if len(container_ids) == 0:
+            return []
+        result = self._execute(['container', 'inspect', str.join(' ', container_ids)])
+        raw_instances = json.loads(result.stdout)
+        instances: List[Instance] = []
+        for raw_instance in raw_instances:
+            instances.append(Instance(id=raw_instance['Id'],
+                                      name=raw_instance['Name'],
+                                      platform=self,
+                                      running=raw_instance['State']['Running']))
+        return instances
 
     def blueprint_show(self, blueprint):
         pass
@@ -99,25 +109,7 @@ class Docker(Platform):
         self._execute(cmd)
 
     def service_list(self, kind: Optional[str] = None) -> List[InstanceSchema]:
-        result = self._execute(['container', 'ls', '--all', '--quiet'])
-        container_ids = [container_id for container_id in result.stdout.split('\n') if container_id != '']
-        if len(container_ids) == 0:
-            return []
-        result = self._execute(['container', 'inspect', str.join(' ', container_ids)])
-        raw_instances = json.loads(result.stdout)
-        instances = []
-        for raw_instance in raw_instances:
-            instances.append(InstanceSchema(id=raw_instance['Id'], state=raw_instance['State']['Status']))
-        return instances
-        #instances = parse_raw_as(List[DockerInspectionSchema], result.stdout)
         pass
-
-        # result = self._execute(['container', 'ls', '--format', '{{ json . }}'])
-        # raw_instances = [json.loads(e) for e in result.stdout.split('\n') if e.startswith('{')]
-        # for raw_instance in raw_instances:
-        #     result = self._execute(['container', 'inspect', raw_instance['ID']])
-        #     raw_instance['inspection'] = json.loads(result.stdout)
-        #return [water.models.Instance(i) for i in raw_instances]
 
     def service_show(self, blueprint):
         result = self._execute(['container', 'inspect', blueprint.name])

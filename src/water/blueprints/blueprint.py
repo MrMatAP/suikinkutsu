@@ -49,6 +49,24 @@ class Blueprint(abc.ABC):
         if schema:
             self._schema.merge_defaults(self._defaults)
 
+    @classmethod
+    def cli_prepare(cls, parser) -> None:
+        """
+        Hook to declare CLI arguments
+        Args:
+            parser: The ArgumentParser to attach CLI arguments to
+        """
+        pass
+
+    @classmethod
+    def cli_assess(cls, args: Namespace) -> None:
+        """
+        Hook to parse CLI arguments
+        Args:
+            args: The namespace containing the parsed CLI arguments
+        """
+        pass
+
     @property
     def name(self):
         return self._schema.name
@@ -80,11 +98,3 @@ class Blueprint(abc.ABC):
     @property
     def depends_on(self):
         return self._schema.depends_on
-
-    @classmethod
-    def cli_prepare(cls, parser):
-        pass
-
-    @classmethod
-    def cli_assess(cls, args: Namespace):
-        pass

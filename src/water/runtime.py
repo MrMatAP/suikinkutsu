@@ -24,7 +24,7 @@ import os
 import pathlib
 import enum
 import json
-from typing import Dict, Type, ClassVar, Optional
+from typing import List, Dict, Type, ClassVar, Optional
 from argparse import ArgumentParser, Namespace
 
 from water.outputs import WaterOutput
@@ -73,6 +73,7 @@ class Runtime:
         self._secrets = {}
         # TODO
         self.raw_config = WaterConfiguration.construct()
+        self._instances = []
 
         if ENV_CONFIG_FILE in os.environ:
             self.config_file = pathlib.Path(os.getenv(ENV_CONFIG_FILE))
@@ -155,6 +156,8 @@ class Runtime:
             self.secrets_file = args.override_secrets_file
             self.secrets_file_source = Source.CLI
         self.secrets_load()
+
+        self._instances = self.platform.instance_list()
 
     def config_load(self):
         self.raw_config = WaterConfiguration.construct()
@@ -310,3 +313,7 @@ class Runtime:
     @property
     def secrets(self) -> Dict:
         return self._secrets
+
+    @property
+    def instances(self) -> List:
+        return self._instances

@@ -20,6 +20,8 @@
 #  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 #  SOFTWARE.
 
+from typing import List
+
 from .output_base import WaterOutput, WaterDisplayable
 from rich.console import Console
 from rich.table import Table
@@ -107,6 +109,17 @@ class HumanWaterOutput(WaterOutput):
         table.add_column('Blueprint')
         table.add_column('Description')
         [table.add_row(name, bp.description) for name, bp in runtime.available_blueprints.items()]
+        console.print(table)
+
+    def instance_list(self, runtime):
+        table = Table(title='Instances', box=ROUNDED)
+        table.add_column('Id')
+        table.add_column('Name')
+        table.add_column('Platform')
+        table.add_column('Blueprint')
+        table.add_column('Running')
+        # TODO: Blueprint
+        [table.add_row(i.id, i.name, i.platform.name, i.blueprint, str(i.running)) for i in runtime.instances]
         console.print(table)
 
     def __repr__(self):

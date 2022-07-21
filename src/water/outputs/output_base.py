@@ -99,6 +99,9 @@ class WaterOutput(abc.ABC):
     def blueprint_list(self, runtime):
         pass
 
+    def instance_list(self, runtime):
+        pass
+
     @staticmethod
     def _exception_dict(ex: Exception):
         return {

@@ -51,7 +51,7 @@ def blueprint_list(runtime: Runtime, args: argparse.Namespace) -> int:
 
 
 def instance_list(runtime: Runtime, args: argparse.Namespace) -> int:
-    runtime.platform.service_list()
+    runtime.output.instance_list(runtime)
     return 0
 
 
@@ -148,21 +148,28 @@ def main() -> int:
     cook_down_parser = cook_subparser.add_parser('down', help='Stop a running environment')
     cook_down_parser.set_defaults(cmd=cook_down)
 
+    runtime = None
     try:
         runtime = Runtime()
         [blueprint.cli_prepare(subparsers) for blueprint in runtime.available_blueprints.values()]
-        [platform.cli(subparsers) for platform in runtime.available_platforms.values()]
+        [platform.cli_prepare(subparsers) for platform in runtime.available_platforms.values()]
         runtime.cli_prepare(parser)
         args = parser.parse_args()
         runtime.cli_assess(args)
+        [blueprint.cli_assess(args) for blueprint in runtime.available_blueprints.values()]
+        [platform.cli_assess(args) for platform in runtime.available_platforms.values()]
 
+        # Execute the desired command
         if hasattr(args, 'cmd'):
             return args.cmd(runtime, args)
         else:
             parser.print_help()
         return 0
     except MurkyWaterException as mwe:
-        #console.print_exception()
+        if runtime:
+            runtime.output.exception(ex=mwe)
+        else:
+            print(f'An exception occurred during initialisation: {mwe}')
         return mwe.code
 
 
