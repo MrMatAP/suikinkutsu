@@ -24,7 +24,7 @@ import os
 import pathlib
 import enum
 import json
-from typing import Dict, Type
+from typing import Dict, Type, ClassVar
 from argparse import ArgumentParser, Namespace
 
 from water.outputs import WaterOutput
@@ -61,7 +61,7 @@ class Runtime:
         self.output = DEFAULT_OUTPUT_CLASS
         self.output_source = Source.DEFAULT
         self._available_blueprints = {cls.kind: cls for cls in Blueprint.__subclasses__()}
-        self._available_platforms = {cls.name: cls() for cls in Platform.__subclasses__()}
+        self._available_platforms = self._find_all_subclasses(Platform)
         self.platform = DEFAULT_PLATFORM_CLASS
         self.platform_source = Source.DEFAULT
         self.recipe_file = pathlib.Path(DEFAULT_RECIPE_FILE)
@@ -93,6 +93,13 @@ class Runtime:
         if ENV_SECRETS_FILE in os.environ:
             self.secrets_file = os.getenv(ENV_SECRETS_FILE)
             self.secrets_file_source = Source.ENVIRONMENT
+
+    def _find_all_subclasses(self, base: ClassVar):
+        all_subclasses = {}
+        for subclass in base.__subclasses__():
+            all_subclasses[subclass.name] = subclass
+            all_subclasses.update(self._find_all_subclasses(subclass))
+        return all_subclasses
 
     def cli_prepare(self, parser: ArgumentParser):
         parser.add_argument('-c',

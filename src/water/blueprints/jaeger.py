@@ -21,9 +21,9 @@
 #  SOFTWARE.
 
 from argparse import Namespace
-from schema import BlueprintSchema
+from water.schema import BlueprintSchema
 from water.blueprints.blueprint import Blueprint
-from constants import LABEL_BLUEPRINT, LABEL_CREATED_BY
+from water.constants import LABEL_BLUEPRINT, LABEL_CREATED_BY
 
 
 class Jaeger(Blueprint):

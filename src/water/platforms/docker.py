@@ -14,7 +14,7 @@
 #
 #  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 #  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-#  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+#  FITNESS FOR A PARTICULAR PURPOSE AND NON INFRINGEMENT. IN NO EVENT SHALL THE
 #  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 #  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 #  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
@@ -31,60 +31,30 @@ from water.platforms.platform import Platform
 from water.schema import InstanceSchema
 
 
-class DockerInspectionStateSchema(BaseModel):
-    status: str = Field(alias='Status')
-    running: bool = Field(alias='Running')
-    paused: bool = Field(alias='Paused')
-    restarting: bool = Field(alias='Restarting')
-    oom_killed: bool = Field(alias='OOMKilled')
-    dead: bool = Field(alias='Dead')
-    pid: int = Field(alias='Pid')
-    exit_code: int = Field(alias='ExitCode')
-    error: str = Field(alias='Error')
-    started_at: datetime.datetime = Field(alias='StartedAt')
-    finished_at: datetime.datetime = Field(alias='FinishedAt')
+class Docker(Platform):
 
+    name: str = 'docker'
+    description: str = 'Docker is the classic containerisation platform'
+    executable_name = 'docker'
 
-class DockerInspectionMountsSchema(BaseModel):
-    type: str = Field(alias='Type')
-    name: str = Field(alias='Name')
-    source: str = Field(alias='Source')
-    destination: str = Field(alias='Destination')
-    driver: str = Field(alias='Driver')
-    mode: str = Field(alias='Mode')
-    read_write: bool = Field(alias='RW')
-    propagation: str = Field(alias='Propagation')
+    def __init__(self):
+        super().__init__()
+        try:
+            self._execute(['ps', '-q'])
+        except MurkyWaterException:
+            self._available = False
 
+    def blueprint_create(self, blueprint):
+        pass
 
-class DockerInspectionConfigSchema(BaseModel):
-    host_name: str = Field(alias='Hostname')
-    domain_name: str = Field(alias='Domainname')
-    user: str = Field(alias='User')
-    attach_stdin: bool = Field(alias='AttachStdin')
-    attach_stdout: bool = Field(alias='AttachStdout')
-    attach_stderr: bool = Field(alias='AttachStderr')
-    exposed_ports: Dict[str, typing.Any] = Field(alias='ExposedPorts')
-    env: List[str] = Field(alias='Env')
-    image: str = Field(alias='Image')
-    volumes: Dict[str, typing.Any] = Field(alias='Volumes')
-    labels: Dict[str, str] = Field(alias='Labels')
+    def blueprint_list(self, blueprint):
+        pass
 
+    def blueprint_show(self, blueprint):
+        pass
 
-class DockerInspectionSchema(BaseModel):
-    id: str = Field(alias='Id')
-    created: datetime.datetime = Field(alias='Created')
-    path: str = Field(alias='Path')
-    args: List[str] = Field(alias='Args')
-    state: DockerInspectionStateSchema = Field(alias='State')
-    mounts: List[DockerInspectionMountsSchema] = Field(alias='Mounts')
-    config: DockerInspectionConfigSchema = Field(alias='Config')
-
-
-class DockerLike:
-    """
-    This class provides the shared methods used by both Docker and NerdCtl which those two inherit
-    from in addition to the Platform interface. The only difference is really the binary executed
-    """
+    def blueprint_remove(self, blueprint):
+        pass
 
     def volume_create(self, name: str):
         self._execute(['volume', 'create',
@@ -156,56 +126,3 @@ class DockerLike:
         self._execute(['container', 'stop', blueprint.name])
         self._execute(['container', 'rm', blueprint.name])
         [self._execute(['volume', 'rm', vol]) for vol in blueprint.volumes]
-
-
-class Docker(DockerLike, Platform):
-
-    name: str = 'docker'
-    description: str = 'Docker is the classic containerisation platform'
-    executable_name = 'docker'
-
-    def __init__(self):
-        super().__init__()
-        try:
-            self._execute(['ps', '-q'])
-        except MurkyWaterException:
-            self._available = False
-
-    def blueprint_create(self, blueprint):
-        pass
-
-    def blueprint_list(self, blueprint):
-        pass
-
-    def blueprint_show(self, blueprint):
-        pass
-
-    def blueprint_remove(self, blueprint):
-        pass
-
-
-class Nerdctl(DockerLike, Platform):
-
-    name: str = 'nerdctl'
-    description: str = 'nerdctl is a modern CLI for a containerd implementation, brought to you ' \
-                       'via Rancher Desktop (for example).'
-    executable_name = 'nerdctl'
-
-    def __init__(self):
-        super().__init__()
-        try:
-            self._execute(['ps', '-q'])
-        except MurkyWaterException:
-            self._available = False
-
-    def blueprint_create(self, blueprint):
-        self.service_create(blueprint)
-
-    def blueprint_list(self, blueprint):
-        pass
-
-    def blueprint_show(self, blueprint):
-        pass
-
-    def blueprint_remove(self, blueprint):
-        self.service_remove(blueprint)
