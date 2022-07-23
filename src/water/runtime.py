@@ -27,8 +27,8 @@ import json
 from typing import List, Dict, Type, ClassVar, Optional
 from argparse import ArgumentParser, Namespace
 
-from water.outputs import WaterOutput
-from water.blueprints import Blueprint
+from water.outputs import Output
+from water.blueprints import Blueprint, BlueprintInstance
 from water.platforms import Platform
 from water.recipe import Recipe
 from water.schema import WaterConfiguration
@@ -57,11 +57,10 @@ class Runtime:
         self.config_file_source = Source.DEFAULT
         self.config_dir = pathlib.Path(DEFAULT_CONFIG_DIR)
         self.config_dir_source = Source.DEFAULT
-        self._available_outputs = self._find_all_subclasses(WaterOutput)
+        self._available_outputs = self._find_all_subclasses(Output)
         self.output = DEFAULT_OUTPUT_CLASS
         self.output_source = Source.DEFAULT
-        # TODO: Need to consolidate kind vs name
-        self._available_blueprints = self._find_all_subclasses(Blueprint, pk='kind')
+        self._available_blueprints = self._find_all_subclasses(Blueprint)
         self._available_platforms = self._find_all_subclasses(Platform)
         self.platform = DEFAULT_PLATFORM_CLASS
         self.platform_source = Source.DEFAULT
@@ -73,7 +72,7 @@ class Runtime:
         self._secrets = {}
         # TODO
         self.raw_config = WaterConfiguration.construct()
-        self._instances = []
+        self._instances: List[BlueprintInstance] = []
 
         if ENV_CONFIG_FILE in os.environ:
             self.config_file = pathlib.Path(os.getenv(ENV_CONFIG_FILE))
@@ -96,8 +95,7 @@ class Runtime:
             self.secrets_file = os.getenv(ENV_SECRETS_FILE)
             self.secrets_file_source = Source.ENVIRONMENT
 
-    # TODO: Need to consolidate kind vs name
-    def _find_all_subclasses(self, base: ClassVar, pk: Optional[str] = 'name'):
+    def _find_all_subclasses(self, base: ClassVar):
         """
         Recursively find all subclasses
         Args:
@@ -108,8 +106,7 @@ class Runtime:
         """
         all_subclasses = {}
         for subclass in base.__subclasses__():
-            identifier = getattr(subclass, pk) if hasattr(subclass, pk) else f'{subclass.__module__}.{subclass.__name__}'
-            all_subclasses[identifier] = subclass()
+            all_subclasses[subclass.name] = subclass(self)
             all_subclasses.update(self._find_all_subclasses(subclass))
         return all_subclasses
 
@@ -156,7 +153,6 @@ class Runtime:
             self.secrets_file = args.override_secrets_file
             self.secrets_file_source = Source.CLI
         self.secrets_load()
-
         self._instances = self.platform.instance_list()
 
     def config_load(self):
@@ -221,11 +217,11 @@ class Runtime:
         self._config_dir_source = value
 
     @property
-    def available_outputs(self) -> Dict[str, Type[WaterOutput]]:
+    def available_outputs(self) -> Dict[str, Type[Output]]:
         return self._available_outputs
 
     @property
-    def output(self) -> Type[WaterOutput]:
+    def output(self) -> Type[Output]:
         return self._output
 
     @output.setter
@@ -317,3 +313,17 @@ class Runtime:
     @property
     def instances(self) -> List:
         return self._instances
+
+    def instance_create(self, blueprint_instance: BlueprintInstance):
+        blueprint_instance.platform.instance_create(blueprint_instance)
+        self._instances.append(blueprint_instance)
+
+    def instance_remove(self, blueprint_instance: BlueprintInstance):
+        blueprint_instance.platform.instance_remove(blueprint_instance)
+        self._instances.remove(blueprint_instance)
+
+    def get_instance(self, name: str, platform: Optional[Platform] = None) -> Optional[BlueprintInstance]:
+        instances = list(filter(lambda _: _.name == name, self._instances))
+        if platform:
+            instances = list(filter(lambda _: _.platform == platform, instances))
+        return instances[0] if len(instances) > 0 else None

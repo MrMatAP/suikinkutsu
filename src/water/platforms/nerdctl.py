@@ -20,11 +20,11 @@
 #  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 #  SOFTWARE.
 
-from typing import List
+from typing import List, Optional
 import json
 
 from .docker import Docker
-from water.instances import Instance
+from water.blueprints import Blueprint, BlueprintInstance
 
 
 class Nerdctl(Docker):
@@ -33,21 +33,25 @@ class Nerdctl(Docker):
                        'via Rancher Desktop (for example).'
     executable_name = 'nerdctl'
 
-    def instance_list(self) -> List[Instance]:
+    def instance_list(self, blueprint: Optional[Blueprint] = None) -> List[BlueprintInstance]:
+        if not self.available():
+            return []
         result = self._execute(['container', 'ls', '--all', '--quiet'])
         container_ids = [container_id for container_id in result.stdout.split('\n') if container_id != '']
         if len(container_ids) == 0:
             return []
-        result = self._execute(['container', 'inspect', '--mode=native', str.join(' ', container_ids)])
+        cmd = ['container', 'inspect', '--mode=native']
+        cmd.extend(container_ids)
+        result = self._execute(cmd)
         raw_instances = json.loads(result.stdout)
-        instances: List[Instance] = []
+        instances: List[BlueprintInstance] = []
         for raw_instance in raw_instances:
             if 'Labels' not in raw_instance or 'org.mrmat.created-by' not in raw_instance['Labels']:
                 continue
-            instance = Instance(id=raw_instance['ID'],
-                                name=raw_instance['Labels']['nerdctl/name'],
-                                platform=self,
-                                blueprint=raw_instance['Labels']['org.mrmat.water.blueprint'],
-                                running=raw_instance['Process']['Status']['Status'] == 'running')
+            instance = BlueprintInstance(name=raw_instance['Labels']['nerdctl/name'],
+                                         platform=self,
+                                         blueprint=raw_instance['Labels']['org.mrmat.water.blueprint'])
+            instance.id = raw_instance['ID']
+            instance.running = raw_instance['Process']['Status']['Status'] == 'running'
             instances.append(instance)
         return instances

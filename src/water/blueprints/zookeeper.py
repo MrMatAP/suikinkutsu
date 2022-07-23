@@ -30,11 +30,9 @@ from .blueprint import Blueprint
 
 
 class Zookeeper(Blueprint):
-    kind: str = 'zookeeper'
+    name: str = 'zookeeper'
     description: str = 'Zookeeper'
     _defaults: BlueprintSchema = BlueprintSchema(
-        kind='zookeeper',
-        name='zookeeper',
         image='confluentinc/cp-zookeeper:7.2.1',
         volumes={},
         environment={
@@ -51,40 +49,33 @@ class Zookeeper(Blueprint):
         depends_on=[]
     )
 
-    @classmethod
-    def cli_prepare(cls, parser):
+    def cli_prepare(self, parser):
         zk_parser = parser.add_parser(name='zookeeper', help='Zookeeper Commands')
         zk_subparser = zk_parser.add_subparsers()
         zk_create_parser = zk_subparser.add_parser(name='create', help='Create a Zookeeper instance')
-        zk_create_parser.set_defaults(cmd=cls.zookeeper_create)
+        zk_create_parser.set_defaults(cmd=self.zookeeper_create)
         zk_create_parser.add_argument('-n', '--instance-name',
                                       dest='name',
-                                      default=cls._defaults.name,
+                                      default='zookeeper',
                                       required=False,
                                       help='Instance name')
         zk_list_parser = zk_subparser.add_parser(name='list', help='List Zookeeper instances')
-        zk_list_parser.set_defaults(cmd=cls.zookeeper_list)
+        zk_list_parser.set_defaults(cmd=self.zookeeper_list)
         zk_remove_parser = zk_subparser.add_parser(name='remove', help='Remove Zookeeper instances')
-        zk_remove_parser.set_defaults(cmd=cls.zookeeper_remove)
+        zk_remove_parser.set_defaults(cmd=self.zookeeper_remove)
         zk_remove_parser.add_argument('-n', '--instance-name',
                                       dest='name',
                                       required=True,
                                       help='Instance name')
 
-    @classmethod
-    def cli_assess(cls, args: Namespace):
+    def cli_assess(self, args: Namespace):
         super().cli_assess(args)
 
-    @classmethod
-    def zookeeper_create(cls, runtime, args: Namespace):
-        instance = cls(name=args.name)
-        runtime.platform.service_create(instance)
+    def zookeeper_create(self, runtime, args: Namespace):
+        runtime.platform.service_create(self)
 
-    @classmethod
-    def zookeeper_list(cls, runtime, args: Namespace):
-        runtime.platform.service_list(cls.kind)
+    def zookeeper_list(self, runtime, args: Namespace):
+        runtime.platform.service_list(self.name)
 
-    @classmethod
-    def zookeeper_remove(cls, runtime, args: Namespace):
-        instance = cls(name=args.name)
-        runtime.platform.service_remove(instance)
+    def zookeeper_remove(self, runtime, args: Namespace):
+        runtime.platform.service_remove(self)

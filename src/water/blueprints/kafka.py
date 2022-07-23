@@ -30,11 +30,9 @@ from .blueprint import Blueprint
 
 
 class Kafka(Blueprint):
-    kind: str = 'kafka'
+    name: str = 'kafka'
     description: str = 'Kafka'
     _defaults: BlueprintSchema = BlueprintSchema(
-        kind='kafka',
-        name='kafka',
         image='confluentinc/cp-kafka:7.2.1',
         volumes={},
         environment={
@@ -50,40 +48,33 @@ class Kafka(Blueprint):
         depends_on=['zookeeper']
     )
 
-    @classmethod
-    def cli_prepare(cls, parser):
+    def cli_prepare(self, parser):
         kafka_parser = parser.add_parser(name='kafka', help='Kafka Commands')
         kafka_subparser = kafka_parser.add_subparsers()
         kafka_create_parser = kafka_subparser.add_parser(name='create', help='Create a Kafka instance')
-        kafka_create_parser.set_defaults(cmd=cls.kafka_create)
+        kafka_create_parser.set_defaults(cmd=self.kafka_create)
         kafka_create_parser.add_argument('-n', '--instance-name',
                                          dest='name',
-                                         default=cls._defaults.name,
+                                         default='kafka',
                                          required=False,
                                          help='Instance name')
         kafka_list_parser = kafka_subparser.add_parser(name='list', help='List Kafka instances')
-        kafka_list_parser.set_defaults(cmd=cls.kafka_list)
+        kafka_list_parser.set_defaults(cmd=self.kafka_list)
         kafka_remove_parser = kafka_subparser.add_parser(name='remove', help='Remove Kafka instances')
-        kafka_remove_parser.set_defaults(cmd=cls.kafka_remove)
+        kafka_remove_parser.set_defaults(cmd=self.kafka_remove)
         kafka_remove_parser.add_argument('-n', '--instance-name',
                                          dest='name',
                                          required=True,
                                          help='Instance name')
 
-    @classmethod
-    def cli_assess(cls, args: Namespace):
+    def cli_assess(self, args: Namespace):
         super().cli_assess(args)
 
-    @classmethod
-    def kafka_create(cls, runtime, args: Namespace):
-        instance = cls(name=args.name)
-        runtime.platform.service_create(instance)
+    def kafka_create(self, runtime, args: Namespace):
+        runtime.platform.service_create(self)
 
-    @classmethod
-    def kafka_list(cls, runtime, args: Namespace):
-        runtime.platform.service_list(cls.kind)
+    def kafka_list(self, runtime, args: Namespace):
+        runtime.platform.service_list(self.name)
 
-    @classmethod
-    def kafka_remove(cls, runtime, args: Namespace):
-        instance = cls(name=args.name)
-        runtime.platform.service_remove(instance)
+    def kafka_remove(self, runtime, args: Namespace):
+        runtime.platform.service_remove(self)

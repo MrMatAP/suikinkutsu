@@ -21,12 +21,10 @@
 #  SOFTWARE.
 
 import json
-
-from . import WaterDisplayable
-from .output_base import WaterOutput
+from .output import Output, WaterDisplayable
 
 
-class JSONWaterOutput(WaterOutput):
+class JSONWaterOutput(Output):
     name: str = 'json'
 
     def exception(self, ex: Exception) -> None:

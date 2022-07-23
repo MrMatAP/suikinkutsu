@@ -21,12 +21,10 @@
 #  SOFTWARE.
 
 import yaml
-
-from . import WaterDisplayable
-from .output_base import WaterOutput
+from .output import Output, WaterDisplayable
 
 
-class YAMLWaterOutput(WaterOutput):
+class YAMLWaterOutput(Output):
     name: str = 'yaml'
 
     def exception(self, ex: Exception):

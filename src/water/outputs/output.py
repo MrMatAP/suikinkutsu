@@ -35,8 +35,15 @@ class WaterDisplayable(abc.ABC):
         pass
 
 
-class WaterOutput(abc.ABC):
+class Output(abc.ABC):
     name: str = 'BasePlatform'
+
+    def __init__(self, runtime: 'Runtime'):
+        self._runtime = runtime
+
+    @property
+    def runtime(self):
+        return self._runtime
 
     @abc.abstractmethod
     def exception(self, ex: Exception) -> None:

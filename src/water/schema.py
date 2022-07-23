@@ -39,8 +39,6 @@ class WaterConfiguration(BaseModel, WaterDisplayable):
 
 
 class BlueprintSchema(BaseModel):
-    kind: str
-    name: Optional[str]
     platform: Optional[str]
     image: Optional[str]
     labels: Optional[Dict[str, str]]
@@ -51,7 +49,6 @@ class BlueprintSchema(BaseModel):
 
     # TODO: This should be optimised
     def merge_defaults(self, defaults: 'BlueprintSchema'):
-        self.name = self.name or defaults.name
         self.platform = self.platform or defaults.platform
         self.image = self.image or defaults.image
         self.labels = self.labels or defaults.labels
@@ -71,11 +68,6 @@ class BlueprintSchema(BaseModel):
             if k not in self.ports:
                 self.ports[k] = v
         self.depends_on = self.depends_on or defaults.depends_on
-
-
-class InstanceSchema(BaseModel):
-    id: str
-    state: str
 
 
 class RecipeSchema(BaseModel):

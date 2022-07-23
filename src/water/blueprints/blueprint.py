@@ -29,11 +29,9 @@ from water.constants import LABEL_BLUEPRINT
 
 
 class Blueprint(abc.ABC):
-    kind: str = 'base'
+    name: str = 'base'
     description: str = "An abstract base blueprint"
     _defaults: BlueprintSchema = BlueprintSchema(
-        kind='base',
-        name='base',
         image='',
         volumes={},
         environment={},
@@ -42,15 +40,15 @@ class Blueprint(abc.ABC):
         depends_on=[]
     )
 
-    def __init__(self, name: Optional[str] = None, schema: Optional[BlueprintSchema] = None):
-        self._kind = 'base'
+    def __init__(self,
+                 runtime: 'Runtime',
+                 schema: Optional[BlueprintSchema] = None):
+        self._runtime = runtime
         self._schema = schema or self._defaults
-        self._schema.name = name or self._defaults.name
         if schema:
             self._schema.merge_defaults(self._defaults)
 
-    @classmethod
-    def cli_prepare(cls, parser) -> None:
+    def cli_prepare(self, parser) -> None:
         """
         Hook to declare CLI arguments
         Args:
@@ -58,8 +56,7 @@ class Blueprint(abc.ABC):
         """
         pass
 
-    @classmethod
-    def cli_assess(cls, args: Namespace) -> None:
+    def cli_assess(self, args: Namespace) -> None:
         """
         Hook to parse CLI arguments
         Args:
@@ -68,12 +65,8 @@ class Blueprint(abc.ABC):
         pass
 
     @property
-    def name(self):
-        return self._schema.name
-
-    @property
-    def platform(self):
-        return self._schema.platform
+    def runtime(self):
+        return self._runtime
 
     @property
     def image(self):
@@ -98,3 +91,48 @@ class Blueprint(abc.ABC):
     @property
     def depends_on(self):
         return self._schema.depends_on
+
+
+class BlueprintInstance:
+
+    def __init__(self,
+                 name: str,
+                 platform: 'Platform',
+                 blueprint: Optional[Blueprint] = None):
+        self._id = None
+        self._name = name
+        self._platform = platform
+        self._running = False
+        self.blueprint = blueprint
+
+    @property
+    def id(self):
+        return self._id
+
+    @id.setter
+    def id(self, value: str):
+        self._id = value
+
+    @property
+    def name(self):
+        return self._name
+
+    @property
+    def platform(self) -> 'Platform':
+        return self._platform
+
+    @property
+    def running(self) -> bool:
+        return self._running
+
+    @running.setter
+    def running(self, value: bool):
+        self._running = value
+
+    @property
+    def blueprint(self) -> Blueprint:
+        return self._blueprint
+
+    @blueprint.setter
+    def blueprint(self, value: Blueprint):
+        self._blueprint = value

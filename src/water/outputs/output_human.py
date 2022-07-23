@@ -22,7 +22,7 @@
 
 from typing import List
 
-from .output_base import WaterOutput, WaterDisplayable
+from .output import Output, WaterDisplayable
 from rich.console import Console
 from rich.table import Table
 from rich.tree import Tree
@@ -32,7 +32,7 @@ from rich.box import ROUNDED
 console = Console()
 
 
-class HumanWaterOutput(WaterOutput):
+class HumanWaterOutput(Output):
     """Output for human users"""
 
     name: str = 'human'

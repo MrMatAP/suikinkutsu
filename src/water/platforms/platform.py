@@ -27,23 +27,28 @@ import abc
 import subprocess
 import pathlib
 from argparse import Namespace
+
 from water import MurkyWaterException
+from water.blueprints import Blueprint, BlueprintInstance
 
 
 class Platform(abc.ABC):
-
     name: str = 'base'
     executable_name: str = None
     _executable: pathlib.Path = None
     _available: bool = False
 
-    def __init__(self):
+    def __init__(self, runtime: 'Runtime'):
+        self._runtime = runtime
         executable_path = shutil.which(self.executable_name)
         self._executable = pathlib.Path(executable_path) or None
         self._available = bool(self._executable)
 
-    @classmethod
-    def cli_prepare(cls, parser) -> None:
+    @property
+    def runtime(self):
+        return self._runtime
+
+    def cli_prepare(self, parser) -> None:
         """
         Hook to declare CLI arguments
         Args:
@@ -51,8 +56,7 @@ class Platform(abc.ABC):
         """
         pass
 
-    @classmethod
-    def cli_assess(cls, args: Namespace) -> None:
+    def cli_assess(self, args: Namespace) -> None:
         """
         Hook to parse CLI arguments
         Args:
@@ -67,19 +71,19 @@ class Platform(abc.ABC):
         return self._available
 
     @abc.abstractmethod
-    def instance_list(self):
+    def instance_create(self, blueprint_instance: BlueprintInstance):
         pass
 
     @abc.abstractmethod
-    def blueprint_create(self, blueprint):
+    def instance_list(self, blueprint: Optional[Blueprint] = None) -> List[BlueprintInstance]:
         pass
 
     @abc.abstractmethod
-    def blueprint_show(self, blueprint):
+    def instance_show(self, name: str, blueprint: Optional[Blueprint] = None):
         pass
 
     @abc.abstractmethod
-    def blueprint_remove(self, blueprint):
+    def instance_remove(self, name: str, blueprint: Optional[Blueprint] = None):
         pass
 
     @abc.abstractmethod
@@ -96,22 +100,6 @@ class Platform(abc.ABC):
 
     @abc.abstractmethod
     def volume_remove(self, name: str):
-        pass
-
-    @abc.abstractmethod
-    def service_create(self, blueprint):
-        pass
-
-    @abc.abstractmethod
-    def service_list(self, name: Optional[str] = None):
-        pass
-
-    @abc.abstractmethod
-    def service_show(self, blueprint):
-        pass
-
-    @abc.abstractmethod
-    def service_remove(self, blueprint):
         pass
 
     def _execute(self, args: List[str]) -> subprocess.CompletedProcess:

@@ -27,11 +27,9 @@ from water.constants import LABEL_BLUEPRINT, LABEL_CREATED_BY
 
 
 class Jaeger(Blueprint):
-    kind: str = 'jaeger'
+    name: str = 'jaeger'
     description: str = 'Jaeger Tracing'
     _defaults: BlueprintSchema = BlueprintSchema(
-        kind='jaeger',
-        name='jaeger',
         image='jaegertracing/all-in-one:1.35',
         volumes={},
         environment={
@@ -65,7 +63,7 @@ class Jaeger(Blueprint):
         jaeger_create_parser.set_defaults(cmd=cls.jaeger_create)
         jaeger_create_parser.add_argument('-n', '--instance-name',
                                           dest='name',
-                                          default=cls._defaults.name,
+                                          default=cls.name,
                                           required=False,
                                           help='Instance name')
         jaeger_remove_parser = jaeger_subparser.add_parser(name='remove', help='Remove a Jaeger instance')
@@ -75,21 +73,16 @@ class Jaeger(Blueprint):
                                           required=True,
                                           help='Instance name')
 
-    @classmethod
-    def cli_assess(cls, args: Namespace):
+    def cli_assess(self, args: Namespace):
         super().cli_assess(args)
 
-    @classmethod
-    def jaeger_create(cls, runtime, args: Namespace):
-        instance = cls(name=args.name)
-        runtime.platform.service_create(instance)
+    def jaeger_create(self, runtime, args: Namespace):
+        runtime.platform.service_create(self)
         runtime_secrets = runtime.secrets
-        if instance.name not in runtime_secrets:
-            runtime_secrets[instance.name] = {}
+        if self.name not in runtime_secrets:
+            runtime_secrets[self.name] = {}
         runtime.secrets_save()
 
-    @classmethod
-    def jaeger_remove(cls, runtime, args: Namespace):
-        instance = cls(name=args.name)
-        runtime.platform.service_remove(instance)
+    def jaeger_remove(self, runtime, args: Namespace):
+        runtime.platform.service_remove(self)
 

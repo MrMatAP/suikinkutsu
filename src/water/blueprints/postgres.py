@@ -29,15 +29,13 @@ from psycopg2 import sql
 from water.schema import BlueprintSchema
 from water.exceptions import MurkyWaterException
 from water.constants import LABEL_BLUEPRINT, LABEL_CREATED_BY
-from .blueprint import Blueprint
+from .blueprint import Blueprint, BlueprintInstance
 
 
 class PostgreSQL(Blueprint):
-    kind: str = 'postgres'
+    name: str = 'postgres'
     description: str = 'PostgreSQL is a modern relational database'
     _defaults: BlueprintSchema = BlueprintSchema(
-        kind='postgres',
-        name='pg',
         image='postgres:14.3-alpine',
         volumes={'pg_datavol': '/var/lib/postgresql/data'},
         environment={
@@ -53,21 +51,20 @@ class PostgreSQL(Blueprint):
         depends_on=[]
     )
 
-    @classmethod
-    def cli_prepare(cls, parser):
+    def cli_prepare(self, parser):
         pg_parser = parser.add_parser(name='pg', help='PostgreSQL Commands')
         pg_subparser = pg_parser.add_subparsers()
         pg_create_parser = pg_subparser.add_parser(name='create', help='Create a PostgreSQL instance')
-        pg_create_parser.set_defaults(cmd=cls.pg_create)
+        pg_create_parser.set_defaults(cmd=self.pg_create)
         pg_create_parser.add_argument('-n', '--instance-name',
                                       dest='name',
-                                      default=cls._defaults.name,
+                                      default='pg',
                                       required=False,
                                       help='Instance name')
         pg_list_parser = pg_subparser.add_parser(name='list', help='List PostgreSQL instances')
-        pg_list_parser.set_defaults(cmd=cls.pg_list)
+        pg_list_parser.set_defaults(cmd=self.pg_list)
         pg_remove_parser = pg_subparser.add_parser(name='remove', help='Remove PostgreSQL instances')
-        pg_remove_parser.set_defaults(cmd=cls.pg_remove)
+        pg_remove_parser.set_defaults(cmd=self.pg_remove)
         pg_remove_parser.add_argument('-n', '--instance-name',
                                       dest='name',
                                       required=True,
@@ -88,7 +85,7 @@ class PostgreSQL(Blueprint):
                                               required=False,
                                               default=secrets.token_urlsafe(16),
                                               help='Account password')
-        pg_account_create_parser.set_defaults(cmd=cls.pg_account_create)
+        pg_account_create_parser.set_defaults(cmd=self.pg_account_create)
 
         pg_backup_parser = pg_subparser.add_parser(name='backup', help='PostgreSQL backup')
         pg_backup_parser.add_argument('-n', '--instance-name',
@@ -99,40 +96,38 @@ class PostgreSQL(Blueprint):
                                       dest='output_dir',
                                       required=True,
                                       help='Output directory')
-        pg_backup_parser.set_defaults(cmd=cls.pg_backup)
+        pg_backup_parser.set_defaults(cmd=self.pg_backup)
 
-    @classmethod
-    def cli_assess(cls, args: Namespace):
+    def cli_assess(self, args: Namespace):
         super().cli_assess(args)
 
-    @classmethod
-    def pg_create(cls, runtime, args: Namespace):
-        instance = cls(name=args.name)
-        runtime.platform.service_create(instance)
-        runtime_secrets = runtime.secrets
-        if instance.name not in runtime_secrets:
-            runtime_secrets[instance.name] = {
-                'connection': f'postgresql://localhost:5432/{instance.environment.get("POSTGRES_DB")}',
-                'accounts': {
-                    'postgres': instance.environment.get('POSTGRES_PASSWORD')
-                }
-            }
-        else:
-            runtime_secrets[instance.name]['connection'] = f'postgresql://localhost:5432/{instance.environment.get("POSTGRES_DB")}'
-            runtime_secrets_accounts = runtime_secrets[instance.name]['accounts']
-            runtime_secrets_accounts['postgres'] = instance.environment.get('POSTGRES_PASSWORD')
-        runtime.secrets_save()
+    def pg_create(self, runtime, args: Namespace):
+        blueprint_instance = BlueprintInstance(name=args.name,
+                                               platform=runtime.platform,
+                                               blueprint=self)
+        runtime.instance_create(blueprint_instance)
+        # blueprint_instance = runtime.platform.instance_create(blueprint=self, args=args)
+        # runtime_secrets = runtime.secrets
+        # if self.name not in runtime_secrets:
+        #     runtime_secrets[self.name] = {
+        #         'connection': f'postgresql://localhost:5432/{self.environment.get("POSTGRES_DB")}',
+        #         'accounts': {
+        #             'postgres': self.environment.get('POSTGRES_PASSWORD')
+        #         }
+        #     }
+        # else:
+        #     runtime_secrets[self.name]['connection'] = f'postgresql://localhost:5432/{self.environment.get("POSTGRES_DB")}'
+        #     runtime_secrets_accounts = runtime_secrets[self.name]['accounts']
+        #     runtime_secrets_accounts['postgres'] = self.environment.get('POSTGRES_PASSWORD')
+        # runtime.secrets_save()
 
-    @classmethod
-    def pg_list(cls, runtime, args: Namespace):
-        runtime.platform.service_list(cls.kind)
+    def pg_list(self, runtime, args: Namespace):
+        runtime.platform.instance_list(blueprint=self)
 
-    @classmethod
-    def pg_remove(cls, runtime, args: Namespace):
-        instance = cls(name=args.name)
-        runtime.platform.service_remove(instance)
+    def pg_remove(self, runtime, args: Namespace):
+        blueprint_instance = runtime.get_instance(args.name)
+        runtime.instance_remove(blueprint_instance)
 
-    @classmethod
     def pg_account_create(cls, runtime, args):
         instance_secrets = runtime.secrets.get(args.name)
         if instance_secrets is None:
@@ -151,8 +146,7 @@ class PostgreSQL(Blueprint):
         runtime_secrets_accounts[args.account_name] = args.account_password
         runtime.secrets_save()
 
-    @classmethod
-    def pg_backup(cls, runtime, args):
+    def pg_backup(self, runtime, args):
         instance_secrets = runtime.secrets.get(args.name)
         if instance_secrets is None:
             raise MurkyWaterException(msg='No secrets for this instance')
