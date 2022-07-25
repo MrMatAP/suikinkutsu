@@ -25,6 +25,7 @@ import json
 
 from .docker import Docker
 from water.blueprints import Blueprint, BlueprintInstance
+from water.constants import LABEL_BLUEPRINT, LABEL_CREATED_BY
 
 
 class Nerdctl(Docker):
@@ -46,12 +47,15 @@ class Nerdctl(Docker):
         raw_instances = json.loads(result.stdout)
         instances: List[BlueprintInstance] = []
         for raw_instance in raw_instances:
-            if 'Labels' not in raw_instance or 'org.mrmat.created-by' not in raw_instance['Labels']:
+            if not raw_instance.get('Labels', {}).get(LABEL_CREATED_BY):
                 continue
-            instance = BlueprintInstance(name=raw_instance['Labels']['nerdctl/name'],
+            blueprint_label = raw_instance.get('Labels', {}).get(LABEL_BLUEPRINT)
+            status_label = raw_instance.get('Process', {}).get('Status', {}).get('Status')
+
+            instance = BlueprintInstance(name=raw_instance.get('Labels', {}).get('nerdctl/name', 'Unknown'),
                                          platform=self,
-                                         blueprint=raw_instance['Labels']['org.mrmat.water.blueprint'])
+                                         blueprint=self.runtime.available_blueprints.get(blueprint_label))
             instance.id = raw_instance['ID']
-            instance.running = raw_instance['Process']['Status']['Status'] == 'running'
+            instance.running = False if status_label is None else status_label == 'running'
             instances.append(instance)
         return instances

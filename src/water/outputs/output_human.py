@@ -119,7 +119,11 @@ class HumanWaterOutput(Output):
         table.add_column('Blueprint')
         table.add_column('Running')
         # TODO: Blueprint
-        [table.add_row(i.id, i.name, i.platform.name, i.blueprint, str(i.running)) for i in runtime.instances]
+        [table.add_row(i.id,
+                       i.name,
+                       i.platform.name,
+                       i.blueprint.name if i.blueprint else 'Unknown',
+                       str(i.running)) for i in runtime.instances]
         console.print(table)
 
     def __repr__(self):

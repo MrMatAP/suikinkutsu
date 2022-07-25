@@ -22,11 +22,11 @@
 
 from typing import List, Optional
 import json
-from argparse import Namespace
 
 from water import MurkyWaterException
 from .platform import Platform
-from water.blueprints import Blueprint, BlueprintInstance
+from water.blueprints import Blueprint, BlueprintInstance, BlueprintInstanceList
+from water.constants import LABEL_BLUEPRINT, LABEL_CREATED_BY
 
 
 class Docker(Platform):
@@ -57,26 +57,28 @@ class Docker(Platform):
         blueprint_instance.id = result.stdout.strip()
         blueprint_instance.running = True
 
-    def instance_list(self, blueprint: Optional[Blueprint] = None) -> List[BlueprintInstance]:
+    def instance_list(self, blueprint: Optional[Blueprint] = None) -> BlueprintInstanceList:
+        platform_instances = BlueprintInstanceList()
         if not self.available():
-            return []
+            return platform_instances
         result = self._execute(['container', 'ls', '--all', '--quiet'])
         container_ids = [container_id for container_id in result.stdout.split('\n') if container_id != '']
         if len(container_ids) == 0:
-            return []
+            return platform_instances
         result = self._execute(['container', 'inspect', str.join(' ', container_ids)])
         raw_instances = json.loads(result.stdout)
-        instances: List[BlueprintInstance] = []
         for raw_instance in raw_instances:
-            if 'Labels' not in raw_instance or 'org.mrmat.created-by' not in raw_instance['Labels']:
+            if not raw_instance.get('Labels', {}).get(LABEL_CREATED_BY):
                 continue
-            instance = BlueprintInstance(name=raw_instance['Name'],
+            blueprint_label = raw_instance.get('Labels', {}).get(LABEL_BLUEPRINT)
+
+            instance = BlueprintInstance(name=raw_instance.get('Name', 'Unknown'),
                                          platform=self,
-                                         blueprint=raw_instance['Labels']['org.mrmat.water.blueprint'])
+                                         blueprint=self.runtime.available_blueprints.get(blueprint_label))
             instance.id = raw_instance['Id']
-            instance.running = raw_instance['State']['Running']
-            instances.append(instance)
-        return instances
+            instance.running = raw_instance.get('State', {}).get('Running')
+            platform_instances.append(instance)
+        return platform_instances
 
     def instance_show(self, name: str, blueprint: Optional[Blueprint] = None):
         result = self._execute(['container', 'inspect', blueprint.name])

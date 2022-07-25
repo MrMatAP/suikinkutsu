@@ -20,7 +20,7 @@
 #  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 #  SOFTWARE.
 
-from .blueprint import Blueprint, BlueprintInstance
+from .blueprint import Blueprint, BlueprintInstance, BlueprintInstanceList
 from .postgres import PostgreSQL
 from .keycloak import Keycloak
 from .jaeger import Jaeger

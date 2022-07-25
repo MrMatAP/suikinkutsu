@@ -28,7 +28,7 @@ from typing import List, Dict, Type, ClassVar, Optional
 from argparse import ArgumentParser, Namespace
 
 from water.outputs import Output
-from water.blueprints import Blueprint, BlueprintInstance
+from water.blueprints import Blueprint, BlueprintInstance, BlueprintInstanceList
 from water.platforms import Platform
 from water.recipe import Recipe
 from water.schema import WaterConfiguration
@@ -72,7 +72,7 @@ class Runtime:
         self._secrets = {}
         # TODO
         self.raw_config = WaterConfiguration.construct()
-        self._instances: List[BlueprintInstance] = []
+        self._blueprint_instances = BlueprintInstanceList
 
         if ENV_CONFIG_FILE in os.environ:
             self.config_file = pathlib.Path(os.getenv(ENV_CONFIG_FILE))
@@ -153,7 +153,9 @@ class Runtime:
             self.secrets_file = args.override_secrets_file
             self.secrets_file_source = Source.CLI
         self.secrets_load()
-        self._instances = self.platform.instance_list()
+        for platform in self.available_platforms.values():
+            self._blueprint_instances.extend(platform.instance_list())
+            self._blueprint_instances.extend(platform.instance_list())
 
     def config_load(self):
         self.raw_config = WaterConfiguration.construct()
@@ -312,18 +314,26 @@ class Runtime:
 
     @property
     def instances(self) -> List:
-        return self._instances
+        return self._blueprint_instances
 
     def instance_create(self, blueprint_instance: BlueprintInstance):
         blueprint_instance.platform.instance_create(blueprint_instance)
-        self._instances.append(blueprint_instance)
+        self._blueprint_instances.append(blueprint_instance)
 
     def instance_remove(self, blueprint_instance: BlueprintInstance):
         blueprint_instance.platform.instance_remove(blueprint_instance)
-        self._instances.remove(blueprint_instance)
+        self._blueprint_instances.remove(blueprint_instance)
 
-    def get_instance(self, name: str, platform: Optional[Platform] = None) -> Optional[BlueprintInstance]:
-        instances = list(filter(lambda _: _.name == name, self._instances))
+    def instance_list(self,
+                      blueprint: Optional[Blueprint] = None,
+                      platform: Optional[Platform] = None) -> List[BlueprintInstance]:
+        instances = self._blueprint_instances
         if platform:
             instances = list(filter(lambda _: _.platform == platform, instances))
+        if blueprint:
+            instances = list(filter(lambda _: _.blueprint == blueprint, instances))
+        return instances
+
+    def instance_get(self, name: str) -> Optional[BlueprintInstance]:
+        instances = list(filter(lambda _: _.name == name, self.instance_list()))
         return instances[0] if len(instances) > 0 else None

@@ -22,9 +22,11 @@
 
 from argparse import Namespace
 import abc
-from typing import Optional
+from collections import OrderedDict
+from typing import Optional, List
 
 from water.schema import BlueprintSchema
+from water.outputs import WaterDisplayable
 from water.constants import LABEL_BLUEPRINT
 
 
@@ -93,7 +95,7 @@ class Blueprint(abc.ABC):
         return self._schema.depends_on
 
 
-class BlueprintInstance:
+class BlueprintInstance(WaterDisplayable):
 
     def __init__(self,
                  name: str,
@@ -136,3 +138,35 @@ class BlueprintInstance:
     @blueprint.setter
     def blueprint(self, value: Blueprint):
         self._blueprint = value
+
+    def display_dict(self) -> OrderedDict:
+        return OrderedDict({
+            'id': self.id,
+            'name': self.name,
+            'platform': self.platform.name if self.platform else 'Unknown',
+            'blueprint': self.blueprint.name if self.blueprint else 'Unknown',
+            'running': self.running
+        })
+
+
+class BlueprintInstanceList(list, WaterDisplayable):
+
+    def __init__(self, blueprint_instances: List[Blueprint] = None):
+        super().__init__()
+        self._blueprint_instances = blueprint_instances or []
+
+    def display_dict(self) -> OrderedDict:
+        instances = OrderedDict({
+            'id': [],
+            'name': [],
+            'platform': [],
+            'blueprint': [],
+            'running': []
+        })
+        for blueprint_instance in self:
+            instances['id'].append(blueprint_instance.id)
+            instances['name'].append(blueprint_instance.name)
+            instances['platform'].append(blueprint_instance.platform.name if blueprint_instance.platform else 'Unknown')
+            instances['blueprint'].append(blueprint_instance.blueprint.name if blueprint_instance.blueprint else 'Unknown')
+            instances['running'].append(blueprint_instance.running)
+        return instances

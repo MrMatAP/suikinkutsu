@@ -122,10 +122,11 @@ class PostgreSQL(Blueprint):
         # runtime.secrets_save()
 
     def pg_list(self, runtime, args: Namespace):
-        runtime.platform.instance_list(blueprint=self)
+        instances = runtime.instance_list(blueprint=self)
+        runtime.output.displayable(instances)
 
     def pg_remove(self, runtime, args: Namespace):
-        blueprint_instance = runtime.get_instance(args.name)
+        blueprint_instance = runtime.instance_get(args.name)
         runtime.instance_remove(blueprint_instance)
 
     def pg_account_create(cls, runtime, args):
