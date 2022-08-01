@@ -24,7 +24,7 @@ from argparse import Namespace
 import secrets
 
 from water.schema import BlueprintSchema
-from water.blueprints.blueprint import Blueprint
+from water.blueprints.blueprint import Blueprint, BlueprintInstance
 from water.constants import LABEL_BLUEPRINT, LABEL_CREATED_BY
 
 
@@ -36,7 +36,7 @@ class Keycloak(Blueprint):
     description: str = 'Keycloak is an Identity Provider implementing OAuth 2 and SAML authentication/authorisation'
     _defaults: BlueprintSchema = BlueprintSchema(
         image='jboss/keycloak:16.1.1',
-        volumes={'import': '/import'},
+        volumes={'kc_importvol': '/import'},
         environment={
             # 'DB_VENDOR': 'postgres',
             # 'DB_ADDR': 'pg',
@@ -62,11 +62,9 @@ class Keycloak(Blueprint):
         kc_create_parser.set_defaults(cmd=self.kc_create)
         kc_create_parser.add_argument('-n', '--name',
                                       dest='name',
-                                      default=self.name,
+                                      default='kc',
                                       required=False,
                                       help='Instance name')
-        kc_list_parser = kc_subparser.add_parser(name='list', help='List all keycloak instances')
-        kc_list_parser.set_defaults(cmd=self.kc_list)
         kc_remove_parser = kc_subparser.add_parser(name='remove', help='Remove Keycloak instances')
         kc_remove_parser.set_defaults(cmd=self.kc_remove)
         kc_remove_parser.add_argument('-n', '--name',
@@ -76,10 +74,23 @@ class Keycloak(Blueprint):
                                       help='Instance name')
 
     def kc_create(self, runtime, args: Namespace):
-        runtime.platform.service_create(self)
-
-    def kc_list(self, runtime, args: Namespace):
-        runtime.platform.service_list(self)
+        blueprint_instance = BlueprintInstance(name=args.name,
+                                               platform=self.runtime.platform,
+                                               blueprint=self)
+        self.runtime.instance_create(blueprint_instance)
+        runtime_secrets = self.runtime.secrets
+        if args.name not in runtime_secrets:
+            runtime_secrets[args.name] = {
+                'connection': f'http://localhost:8080',
+                'accounts': {
+                    'admin': self.environment.get('KEYCLOAK_PASSWORD')
+                }
+            }
+        else:
+            runtime_secrets[args.name]['connection'] = f'http://localhost:8080'
+            runtime_secrets[args.name]['admin'] = self.environment.get('KEYCLOAK_PASSWORD')
+        self.runtime.secrets = runtime_secrets
 
     def kc_remove(self, runtime, args: Namespace):
-        runtime.platform.service_remove(self)
+        blueprint_instance = self.runtime.instance_get(name=args.name, blueprint=self)
+        self.runtime.instance_remove(blueprint_instance)

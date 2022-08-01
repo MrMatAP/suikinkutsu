@@ -24,7 +24,7 @@ from argparse import Namespace
 
 from water.schema import BlueprintSchema
 from water.constants import LABEL_BLUEPRINT, LABEL_CREATED_BY
-from .blueprint import Blueprint
+from .blueprint import Blueprint, BlueprintInstance
 
 
 class Zookeeper(Blueprint):
@@ -32,7 +32,11 @@ class Zookeeper(Blueprint):
     description: str = 'Zookeeper'
     _defaults: BlueprintSchema = BlueprintSchema(
         image='confluentinc/cp-zookeeper:7.2.1',
-        volumes={},
+        volumes={
+            'zk_etcvol': '/etc/zookeeper/secrets',
+            'zk_datavol': '/var/lib/zookeeper/data',
+            'zk_logvol': '/var/lib/zookeeper/log'
+        },
         environment={
             'ZOOKEEPER_CLIENT_PORT': 32181,
             'ZOOKEEPER_TICK_TIME': 2000,
@@ -48,17 +52,15 @@ class Zookeeper(Blueprint):
     )
 
     def cli_prepare(self, parser):
-        zk_parser = parser.add_parser(name='zookeeper', help='Zookeeper Commands')
+        zk_parser = parser.add_parser(name='zk', help='Zookeeper Commands')
         zk_subparser = zk_parser.add_subparsers()
         zk_create_parser = zk_subparser.add_parser(name='create', help='Create a Zookeeper instance')
         zk_create_parser.set_defaults(cmd=self.zookeeper_create)
         zk_create_parser.add_argument('-n', '--instance-name',
                                       dest='name',
-                                      default='zookeeper',
+                                      default='zk',
                                       required=False,
                                       help='Instance name')
-        zk_list_parser = zk_subparser.add_parser(name='list', help='List Zookeeper instances')
-        zk_list_parser.set_defaults(cmd=self.zookeeper_list)
         zk_remove_parser = zk_subparser.add_parser(name='remove', help='Remove Zookeeper instances')
         zk_remove_parser.set_defaults(cmd=self.zookeeper_remove)
         zk_remove_parser.add_argument('-n', '--instance-name',
@@ -67,10 +69,19 @@ class Zookeeper(Blueprint):
                                       help='Instance name')
 
     def zookeeper_create(self, runtime, args: Namespace):
-        runtime.platform.service_create(self)
-
-    def zookeeper_list(self, runtime, args: Namespace):
-        runtime.platform.service_list(self.name)
+        blueprint_instance = BlueprintInstance(name=args.name,
+                                               platform=runtime.platform,
+                                               blueprint=self)
+        self.runtime.instance_create(blueprint_instance)
+        runtime_secrets = self.runtime.secrets
+        if args.name not in runtime_secrets:
+            runtime_secrets[args.name] = {
+                'connection': f'{args.name}:{self.environment.get("ZOOKEEPER_CLIENT_PORT")}'
+            }
+        else:
+            runtime_secrets[args.name]['connection'] = f'{args.name}:{self.environment.get("ZOOKEEPER_CLIENT_PORT")}'
+        self.runtime.secrets = runtime_secrets
 
     def zookeeper_remove(self, runtime, args: Namespace):
-        runtime.platform.service_remove(self)
+        blueprint_instance = self.runtime.instance_get(name=args.name, blueprint=self)
+        self.runtime.instance_remove(blueprint_instance)

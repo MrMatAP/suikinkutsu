@@ -22,8 +22,8 @@
 
 from argparse import Namespace
 from water.schema import BlueprintSchema
-from water.blueprints.blueprint import Blueprint
 from water.constants import LABEL_BLUEPRINT, LABEL_CREATED_BY
+from water.blueprints.blueprint import Blueprint, BlueprintInstance
 
 
 class Jaeger(Blueprint):
@@ -34,7 +34,9 @@ class Jaeger(Blueprint):
     description: str = 'Jaeger Tracing'
     _defaults: BlueprintSchema = BlueprintSchema(
         image='jaegertracing/all-in-one:1.35',
-        volumes={},
+        volumes={
+            'jaeger_tmpvol': '/tmp'
+        },
         environment={
             'COLLECTOR_ZIPKIN_HOST_PORT': ':9411',
             'COLLECTOR_OLTP_ENABLED': 'true'
@@ -58,31 +60,37 @@ class Jaeger(Blueprint):
         depends_on=[]
     )
 
-    @classmethod
-    def cli_prepare(cls, parser):
+    def cli_prepare(self, parser):
         jaeger_parser = parser.add_parser(name='jaeger', help='Jaeger Commands')
         jaeger_subparser = jaeger_parser.add_subparsers()
         jaeger_create_parser = jaeger_subparser.add_parser(name='create', help='Create a Jaeger instance')
-        jaeger_create_parser.set_defaults(cmd=cls.jaeger_create)
+        jaeger_create_parser.set_defaults(cmd=self.jaeger_create)
         jaeger_create_parser.add_argument('-n', '--instance-name',
                                           dest='name',
-                                          default=cls.name,
+                                          default='jaeger',
                                           required=False,
                                           help='Instance name')
         jaeger_remove_parser = jaeger_subparser.add_parser(name='remove', help='Remove a Jaeger instance')
-        jaeger_remove_parser.set_defaults(cmd=cls.jaeger_remove)
+        jaeger_remove_parser.set_defaults(cmd=self.jaeger_remove)
         jaeger_remove_parser.add_argument('-n', '--instance-name',
                                           dest='name',
                                           required=True,
                                           help='Instance name')
 
     def jaeger_create(self, runtime, args: Namespace):
-        runtime.platform.service_create(self)
-        runtime_secrets = runtime.secrets
-        if self.name not in runtime_secrets:
-            runtime_secrets[self.name] = {}
-        runtime.secrets_save()
+        blueprint_instance = BlueprintInstance(name=args.name,
+                                               platform=runtime.platform,
+                                               blueprint=self)
+        self.runtime.instance_create(blueprint_instance)
+        runtime_secrets = self.runtime.secrets
+        if args.name not in runtime_secrets:
+            runtime_secrets[args.name] = {
+                'connection': f'{args.name}:16686'
+            }
+        else:
+            runtime_secrets[args.name]['connection'] = f'{args.name}:16686'
+        self.runtime.secrets = runtime_secrets
 
     def jaeger_remove(self, runtime, args: Namespace):
-        runtime.platform.service_remove(self)
-
+        blueprint_instance = self.runtime.instance_get(name=args.name, blueprint=self)
+        self.runtime.instance_remove(blueprint_instance)

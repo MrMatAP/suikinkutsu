@@ -68,6 +68,8 @@ class Docker(WaterPlatform):
             cmd.extend(['--mount', f'type=volume,source={src},destination={dst}'])
         for host, container in blueprint_instance.blueprint.ports.items():
             cmd.extend(['-p', f'{host}:{container}'])
+        if len(blueprint_instance.blueprint.depends_on) > 0:
+            cmd.extend(['--link', ','.join(blueprint_instance.blueprint.depends_on)])
         cmd.append(blueprint_instance.blueprint.image)
         result = self.execute(cmd)
         blueprint_instance.id = result.stdout.strip()
@@ -81,7 +83,9 @@ class Docker(WaterPlatform):
         container_ids = [container_id for container_id in result.stdout.split('\n') if container_id != '']
         if len(container_ids) == 0:
             return platform_instances
-        result = self.execute(['container', 'inspect', str.join(' ', container_ids)])
+        cmd = ['container', 'inspect']
+        cmd.extend(container_ids)
+        result = self.execute(cmd)
         raw_instances = json.loads(result.stdout)
         for raw_instance in raw_instances:
             if not raw_instance.get('Config', {}).get('Labels', {}).get(LABEL_CREATED_BY):

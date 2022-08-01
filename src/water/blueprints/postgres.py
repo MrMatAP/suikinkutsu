@@ -63,8 +63,6 @@ class PostgreSQL(Blueprint):
                                       default='pg',
                                       required=False,
                                       help='Instance name')
-        pg_list_parser = pg_subparser.add_parser(name='list', help='List PostgreSQL instances')
-        pg_list_parser.set_defaults(cmd=self.pg_list)
         pg_remove_parser = pg_subparser.add_parser(name='remove', help='Remove PostgreSQL instances')
         pg_remove_parser.set_defaults(cmd=self.pg_remove)
         pg_remove_parser.add_argument('-n', '--instance-name',
@@ -137,10 +135,10 @@ class PostgreSQL(Blueprint):
 
     def pg_create(self, runtime, args: Namespace):
         blueprint_instance = BlueprintInstance(name=args.name,
-                                               platform=runtime.platform,
+                                               platform=self.runtime.platform,
                                                blueprint=self)
-        runtime.instance_create(blueprint_instance)
-        runtime_secrets = runtime.secrets
+        self.runtime.instance_create(blueprint_instance)
+        runtime_secrets = self.runtime.secrets
         if args.name not in runtime_secrets:
             runtime_secrets[args.name] = {
                 'connection': f'postgresql://localhost:5432/{self.environment.get("POSTGRES_DB")}',
@@ -153,15 +151,11 @@ class PostgreSQL(Blueprint):
                 'connection'] = f'postgresql://localhost:5432/{self.environment.get("POSTGRES_DB")}'
             runtime_secrets_roles = runtime_secrets[args.name]['roles']
             runtime_secrets_roles['postgres'] = self.environment.get('POSTGRES_PASSWORD')
-        runtime.secrets = runtime_secrets
-
-    def pg_list(self, runtime: 'Runtime', args: Namespace):
-        instances = runtime.instance_list(blueprint=self)
-        runtime.output.displayable(instances)
+        self.runtime.secrets = runtime_secrets
 
     def pg_remove(self, runtime: 'Runtime', args: Namespace):
-        blueprint_instance = runtime.instance_get(name=args.name, blueprint=self)
-        runtime.instance_remove(blueprint_instance)
+        blueprint_instance = self.runtime.instance_get(name=args.name, blueprint=self)
+        self.runtime.instance_remove(blueprint_instance)
 
     def pg_role_create(self, runtime: 'Runtime', args: Namespace):
         instance_secrets = self.runtime.secrets.get(args.name)

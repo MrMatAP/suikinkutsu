@@ -24,7 +24,7 @@ from argparse import Namespace
 
 from water.schema import BlueprintSchema
 from water.constants import LABEL_BLUEPRINT, LABEL_CREATED_BY
-from .blueprint import Blueprint
+from .blueprint import Blueprint, BlueprintInstance
 
 
 class Kafka(Blueprint):
@@ -35,9 +35,12 @@ class Kafka(Blueprint):
     description: str = 'Kafka'
     _defaults: BlueprintSchema = BlueprintSchema(
         image='confluentinc/cp-kafka:7.2.1',
-        volumes={},
+        volumes={
+            'kafka_etcvol': '/etc/kafka/secrets',
+            'kafka_datavol': '/var/lib/kafka/data'
+        },
         environment={
-            'KAFKA_ZOOKEEPER_CONNECT': 'zookeeper:32181',
+            'KAFKA_ZOOKEEPER_CONNECT': 'zk:32181',
             'KAFKA_ADVERTISED_LISTENERS': 'PLAINTEXT://localhost:29092',
             'KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR': 1
         },
@@ -46,36 +49,41 @@ class Kafka(Blueprint):
             LABEL_BLUEPRINT: 'kafka',
             LABEL_CREATED_BY: 'water'
         },
-        depends_on=['zookeeper']
+        depends_on=['zk']
     )
 
     def cli_prepare(self, parser):
         kafka_parser = parser.add_parser(name='kafka', help='Kafka Commands')
         kafka_subparser = kafka_parser.add_subparsers()
         kafka_create_parser = kafka_subparser.add_parser(name='create', help='Create a Kafka instance')
-        kafka_create_parser.set_defaults(cmd=self.kafka_create)
         kafka_create_parser.add_argument('-n', '--instance-name',
                                          dest='name',
                                          default='kafka',
                                          required=False,
                                          help='Instance name')
-        kafka_list_parser = kafka_subparser.add_parser(name='list', help='List Kafka instances')
-        kafka_list_parser.set_defaults(cmd=self.kafka_list)
+        kafka_create_parser.set_defaults(cmd=self.kafka_create)
+
         kafka_remove_parser = kafka_subparser.add_parser(name='remove', help='Remove Kafka instances')
-        kafka_remove_parser.set_defaults(cmd=self.kafka_remove)
         kafka_remove_parser.add_argument('-n', '--instance-name',
                                          dest='name',
                                          required=True,
                                          help='Instance name')
-
-    def cli_assess(self, args: Namespace):
-        super().cli_assess(args)
+        kafka_remove_parser.set_defaults(cmd=self.kafka_remove)
 
     def kafka_create(self, runtime, args: Namespace):
-        runtime.platform.service_create(self)
-
-    def kafka_list(self, runtime, args: Namespace):
-        runtime.platform.service_list(self.name)
+        blueprint_instance = BlueprintInstance(name=args.name,
+                                               platform=self.runtime.platform,
+                                               blueprint=self)
+        self.runtime.instance_create(blueprint_instance)
+        runtime_secrets = self.runtime.secrets
+        if args.name not in runtime_secrets:
+            runtime_secrets[args.name] = {
+                'connection': f'{args.name}:29092'
+            }
+        else:
+            runtime_secrets[args.name]['connection'] = f'{args.name}:29092'
+        self.runtime.secrets = runtime_secrets
 
     def kafka_remove(self, runtime, args: Namespace):
-        runtime.platform.service_remove(self)
+        blueprint_instance = self.runtime.instance_get(name=args.name, blueprint=self)
+        self.runtime.instance_remove(blueprint_instance)
