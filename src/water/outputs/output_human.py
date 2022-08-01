@@ -20,14 +20,14 @@
 #  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 #  SOFTWARE.
 
-from typing import List
-
-from .output import Output, WaterDisplayable
 from rich.console import Console
 from rich.table import Table
 from rich.tree import Tree
 from rich.columns import Columns
 from rich.box import ROUNDED
+
+from .output import Output, WaterDisplayable
+
 
 console = Console()
 
@@ -56,17 +56,17 @@ class HumanWaterOutput(Output):
         [table.add_row(row) for row in data.values()]
         console.print(table)
 
-    def config(self, runtime):
+    def config_show(self, runtime):
         table = Table(title='Configuration', box=ROUNDED)
         table.add_column('Key')
         table.add_column('Value')
         table.add_column('Source')
-        table.add_row('config_file', str(runtime.config_file), runtime.config_file_source.value)
-        table.add_row('config_dir', str(runtime.config_dir), runtime.config_dir_source.value)
-        table.add_row('output', runtime.output.name, runtime.output_source.value)
-        table.add_row('platform', runtime.platform.name, runtime.platform_source.value)
-        table.add_row('recipe_file', str(runtime.recipe_file), runtime.recipe_file_source.value)
-        table.add_row('secrets_file', str(runtime.secrets_file), runtime.secrets_file_source.value)
+        table.add_row('config_file', str(runtime.config_file.value), str(runtime.config_file.source))
+        table.add_row('config_dir', str(runtime.config_dir.value), str(runtime.config_dir.source))
+        table.add_row('output', runtime.output_class.value, str(runtime.output_class.source))
+        table.add_row('platform', runtime.platform_class.value, str(runtime.platform_class.source))
+        table.add_row('recipe_file', str(runtime.recipe_file.value), str(runtime.recipe_file.source))
+        table.add_row('secrets_file', str(runtime.secrets_file.value), str(runtime.secrets_file.source))
         console.print(table)
 
     def platform_list(self, runtime):
@@ -75,9 +75,9 @@ class HumanWaterOutput(Output):
         table.add_column('Available')
         table.add_column('Description')
         [table.add_row(name,
-                       str(cls.available()),
-                       cls.description)
-         for name, cls in runtime.available_platforms.items()]
+                       str(pf.available),
+                       pf.description)
+            for name, pf in runtime.platforms.items()]
         console.print(table)
 
     def cook_show(self, runtime):
@@ -101,14 +101,14 @@ class HumanWaterOutput(Output):
             [ports_node.add(Columns([f'[bold]{k}:[/bold]', v], width=80)) for k, v in blueprint.ports.items()]
 
             depends_on_node = node.add('[bold]Depends on:[/bold]')
-            [depends_on_node.add(Columns([f'[bold]Blueprint:[/bold]', v], width=80)) for v in blueprint.depends_on]
+            [depends_on_node.add(Columns(['[bold]Blueprint:[/bold]', v], width=80)) for v in blueprint.depends_on]
         console.print(tree)
 
     def blueprint_list(self, runtime):
         table = Table(title='Available Blueprints', box=ROUNDED)
         table.add_column('Blueprint')
         table.add_column('Description')
-        [table.add_row(name, bp.description) for name, bp in runtime.available_blueprints.items()]
+        [table.add_row(name, bp.description) for name, bp in runtime.blueprints.items()]
         console.print(table)
 
     def instance_list(self, runtime):
@@ -118,12 +118,14 @@ class HumanWaterOutput(Output):
         table.add_column('Platform')
         table.add_column('Blueprint')
         table.add_column('Running')
-        # TODO: Blueprint
+        table.add_column('Volumes')
         [table.add_row(i.id,
                        i.name,
                        i.platform.name,
                        i.blueprint.name if i.blueprint else 'Unknown',
-                       str(i.running)) for i in runtime.instances]
+                       str(i.running),
+                       '\n'.join([vol.name for vol in i.volumes]))
+            for i in runtime.instances]
         console.print(table)
 
     def __repr__(self):

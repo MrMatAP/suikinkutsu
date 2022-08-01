@@ -25,6 +25,9 @@ from .output import Output, WaterDisplayable
 
 
 class JSONWaterOutput(Output):
+    """
+    JSON output
+    """
     name: str = 'json'
 
     def exception(self, ex: Exception) -> None:
@@ -43,7 +46,7 @@ class JSONWaterOutput(Output):
     def displayable(self, displayable: WaterDisplayable):
         print('JSON')
 
-    def config(self, runtime) -> None:
+    def config_show(self, runtime) -> None:
         config_dict = self._config_dict(runtime)
         print(json.dumps(config_dict))
 

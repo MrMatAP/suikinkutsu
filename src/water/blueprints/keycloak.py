@@ -29,6 +29,9 @@ from water.constants import LABEL_BLUEPRINT, LABEL_CREATED_BY
 
 
 class Keycloak(Blueprint):
+    """
+    Keycloak Blueprint
+    """
     name: str = 'keycloak'
     description: str = 'Keycloak is an Identity Provider implementing OAuth 2 and SAML authentication/authorisation'
     _defaults: BlueprintSchema = BlueprintSchema(
@@ -71,9 +74,6 @@ class Keycloak(Blueprint):
                                       default=self.name,
                                       required=False,
                                       help='Instance name')
-
-    def cli_assess(self, args: Namespace):
-        super().cli_assess(args)
 
     def kc_create(self, runtime, args: Namespace):
         runtime.platform.service_create(self)

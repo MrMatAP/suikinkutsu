@@ -1,4 +1,3 @@
-
 #  MIT License
 #
 #  Copyright (c) 2022 Mathieu Imfeld
@@ -33,6 +32,9 @@ from .blueprint import Blueprint, BlueprintInstance
 
 
 class PostgreSQL(Blueprint):
+    """
+    PostgreSQL blueprint
+    """
     name: str = 'postgres'
     description: str = 'PostgreSQL is a modern relational database'
     _defaults: BlueprintSchema = BlueprintSchema(
@@ -69,88 +71,153 @@ class PostgreSQL(Blueprint):
                                       dest='name',
                                       required=True,
                                       help='Instance name')
-        pg_account_parser = pg_subparser.add_parser(name='account', help='PostgreSQL Account Commands')
-        pg_account_subparser = pg_account_parser.add_subparsers()
-        pg_account_create_parser = pg_account_subparser.add_parser(name='create', help='Create an account')
-        pg_account_create_parser.add_argument('-n', '--instance-name',
-                                              dest='name',
-                                              required=True,
-                                              help='Instance name')
-        pg_account_create_parser.add_argument('-a', '--account-name',
-                                              dest='account_name',
-                                              required=True,
-                                              help='Account name')
-        pg_account_create_parser.add_argument('-p', '--account-password',
-                                              dest='account_password',
-                                              required=False,
-                                              default=secrets.token_urlsafe(16),
-                                              help='Account password')
-        pg_account_create_parser.set_defaults(cmd=self.pg_account_create)
+        pg_role_parser = pg_subparser.add_parser(name='role', help='PostgreSQL Role Commands')
+        pg_role_subparser = pg_role_parser.add_subparsers()
+        pg_role_create_parser = pg_role_subparser.add_parser(name='create', help='Create a role')
+        pg_role_create_parser.add_argument('-n', '--instance-name',
+                                           dest='name',
+                                           required=True,
+                                           help='Instance name')
+        pg_role_create_parser.add_argument('-r', '--role-name',
+                                           dest='role_name',
+                                           required=True,
+                                           help='Role name')
+        pg_role_create_parser.add_argument('-p', '--role-password',
+                                           dest='role_password',
+                                           required=False,
+                                           default=secrets.token_urlsafe(16),
+                                           help='Role password')
+        pg_role_create_parser.add_argument('--create-schema',
+                                           dest='create_schema',
+                                           required=False,
+                                           default=True,
+                                           help='Create an associated schema for this role')
+        pg_role_create_parser.set_defaults(cmd=self.pg_role_create)
 
-        pg_backup_parser = pg_subparser.add_parser(name='backup', help='PostgreSQL backup')
-        pg_backup_parser.add_argument('-n', '--instance-name',
-                                      dest='name',
-                                      required=True,
-                                      help='Instance name')
-        pg_backup_parser.add_argument('-o', '--output-dir',
-                                      dest='output_dir',
-                                      required=True,
-                                      help='Output directory')
-        pg_backup_parser.set_defaults(cmd=self.pg_backup)
+        pg_dumpall_parser = pg_subparser.add_parser(name='dumpall', help='PostgreSQL dumpall')
+        pg_dumpall_parser.add_argument('-n', '--instance-name',
+                                       dest='name',
+                                       required=True,
+                                       help='Instance name')
+        pg_dumpall_parser.add_argument('-o', '--dumpfile',
+                                       dest='dumpfile',
+                                       required=True,
+                                       help='File to dump output into')
+        pg_dumpall_parser.set_defaults(cmd=self.pg_dumpall)
 
-    def cli_assess(self, args: Namespace):
-        super().cli_assess(args)
+        pg_dump_parser = pg_subparser.add_parser(name='dump', help='PostgreSQL dump')
+        pg_dump_parser.add_argument('-n', '--instance-name',
+                                    dest='name',
+                                    required=True,
+                                    help='Instance name')
+        pg_dump_parser.add_argument('-o', '--dumpfile',
+                                    dest='dumpfile',
+                                    required=True,
+                                    help='File to dump output into')
+        pg_dump_parser.add_argument('-d', '--database',
+                                    dest='database',
+                                    required=False,
+                                    help='Database containing the schema')
+        pg_dump_parser.add_argument('-s', '--schema',
+                                    dest='schema',
+                                    required=True,
+                                    help='Schema to dump')
+        pg_dump_parser.set_defaults(cmd=self.pg_dump)
+
+        pg_restore_parser = pg_subparser.add_parser(name='restore', help='PostgreSQL restore')
+        pg_restore_parser.add_argument('-n', '--instance-name',
+                                       dest='name',
+                                       required=True,
+                                       help='Instance name')
+        pg_restore_parser.add_argument('-o', '--dumpfile',
+                                       dest='dumpfile',
+                                       required=True,
+                                       help='Dump file to restore from')
+        pg_restore_parser.set_defaults(cmd=self.pg_restore)
 
     def pg_create(self, runtime, args: Namespace):
         blueprint_instance = BlueprintInstance(name=args.name,
                                                platform=runtime.platform,
                                                blueprint=self)
         runtime.instance_create(blueprint_instance)
-        # blueprint_instance = runtime.platform.instance_create(blueprint=self, args=args)
-        # runtime_secrets = runtime.secrets
-        # if self.name not in runtime_secrets:
-        #     runtime_secrets[self.name] = {
-        #         'connection': f'postgresql://localhost:5432/{self.environment.get("POSTGRES_DB")}',
-        #         'accounts': {
-        #             'postgres': self.environment.get('POSTGRES_PASSWORD')
-        #         }
-        #     }
-        # else:
-        #     runtime_secrets[self.name]['connection'] = f'postgresql://localhost:5432/{self.environment.get("POSTGRES_DB")}'
-        #     runtime_secrets_accounts = runtime_secrets[self.name]['accounts']
-        #     runtime_secrets_accounts['postgres'] = self.environment.get('POSTGRES_PASSWORD')
-        # runtime.secrets_save()
+        runtime_secrets = runtime.secrets
+        if args.name not in runtime_secrets:
+            runtime_secrets[args.name] = {
+                'connection': f'postgresql://localhost:5432/{self.environment.get("POSTGRES_DB")}',
+                'roles': {
+                    'postgres': self.environment.get('POSTGRES_PASSWORD')
+                }
+            }
+        else:
+            runtime_secrets[args.name][
+                'connection'] = f'postgresql://localhost:5432/{self.environment.get("POSTGRES_DB")}'
+            runtime_secrets_roles = runtime_secrets[args.name]['roles']
+            runtime_secrets_roles['postgres'] = self.environment.get('POSTGRES_PASSWORD')
+        runtime.secrets = runtime_secrets
 
-    def pg_list(self, runtime, args: Namespace):
+    def pg_list(self, runtime: 'Runtime', args: Namespace):
         instances = runtime.instance_list(blueprint=self)
         runtime.output.displayable(instances)
 
-    def pg_remove(self, runtime, args: Namespace):
-        blueprint_instance = runtime.instance_get(args.name)
+    def pg_remove(self, runtime: 'Runtime', args: Namespace):
+        blueprint_instance = runtime.instance_get(name=args.name, blueprint=self)
         runtime.instance_remove(blueprint_instance)
 
-    def pg_account_create(cls, runtime, args):
-        instance_secrets = runtime.secrets.get(args.name)
+    def pg_role_create(self, runtime: 'Runtime', args: Namespace):
+        instance_secrets = self.runtime.secrets.get(args.name)
         if instance_secrets is None:
             raise MurkyWaterException(msg='No secrets for this instance')
         conn = psycopg2.connect(instance_secrets.get('connection'),
                                 user='postgres',
-                                password=instance_secrets['accounts'].get('postgres'))
+                                password=instance_secrets['roles'].get('postgres'))
         cur = conn.cursor()
-        query = sql.SQL('CREATE ROLE {} ENCRYPTED PASSWORD %s LOGIN').format(sql.Identifier(args.account_name))
-        cur.execute(query, (args.account_password,))
+        query = sql.SQL('CREATE ROLE {} ENCRYPTED PASSWORD %s LOGIN').format(sql.Identifier(args.role_name))
+        cur.execute(query, (args.role_password,))
+        query = sql.SQL('CREATE SCHEMA AUTHORIZATION {}').format(sql.Identifier(args.role_name))
+        cur.execute(query)
+        query = sql.SQL('ALTER ROLE {} SET search_path TO {}').format(
+            sql.Identifier(args.role_name),
+            sql.Identifier(args.role_name)
+        )
+        cur.execute(query)
         conn.commit()
         cur.close()
         conn.close()
-        runtime_secrets = runtime.secrets
-        runtime_secrets_accounts = runtime_secrets[args.name]['accounts']
-        runtime_secrets_accounts[args.account_name] = args.account_password
-        runtime.secrets_save()
+        runtime_secrets = self.runtime.secrets
+        runtime_secrets_roles = runtime_secrets[args.name]['roles']
+        runtime_secrets_roles[args.role_name] = args.role_password
+        self.runtime.secrets_save()
 
-    def pg_backup(self, runtime, args):
-        instance_secrets = runtime.secrets.get(args.name)
-        if instance_secrets is None:
-            raise MurkyWaterException(msg='No secrets for this instance')
-        # TODO:
-        # nerdctl exec -it pg pg_dumpall -h localhost -U postgres -l localdb
+    def pg_dumpall(self, runtime: 'Runtime', args: Namespace):
+        instance = self.runtime.instance_get(name=args.name, blueprint=self)
+        if not instance:
+            self.runtime.output.error(f'There is no instance called {args.name}')
+            return
+        result = instance.platform.execute(['exec', args.name,
+                                            '/usr/local/bin/pg_dumpall', '-h', 'localhost', '-U', 'postgres'])
+        with open(args.dumpfile, 'wt+', encoding='UTF-8') as d:
+            d.write(result.stdout)
 
+    def pg_dump(self, runtime: 'Runtime', args: Namespace):
+        instance = self.runtime.instance_get(name=args.name, blueprint=self)
+        if not instance:
+            self.runtime.output.error(f'There is no instance called {args.name}')
+            return
+        cmd = ['exec', args.name, '/usr/local/bin/pg_dump', '-h', 'localhost', '-U', 'postgres', '-n', args.schema]
+        if hasattr(args, 'database'):
+            cmd.extend(['-d', args.database])
+        result = instance.platform.execute(cmd)
+        with open(args.dumpfile, 'wt+', encoding='UTF-8') as d:
+            d.write(result.stdout)
+
+    def pg_restore(self, runtime: 'Runtime', args: Namespace):
+        instance = self.runtime.instance_get(name=args.name, blueprint=self)
+        if not instance:
+            self.runtime.output.error(f'There is no instance called {args.name}')
+            return
+        cmd = ['exec', args.name, '/usr/local/bin/pg_restore', '-h', 'localhost', '-U', 'postgres', '-n', args.schema]
+        if hasattr(args, 'database'):
+            cmd.extend(['-d', args.database])
+        result = instance.platform.execute(cmd)
+        with open(args.dumpfile, 'wt+', encoding='UTF-8') as d:
+            d.write(result.stdout)

@@ -32,7 +32,7 @@ from water.constants import LABEL_BLUEPRINT
 
 class Blueprint(abc.ABC):
     name: str = 'base'
-    description: str = "An abstract base blueprint"
+    description: str = 'An abstract base blueprint'
     _defaults: BlueprintSchema = BlueprintSchema(
         image='',
         volumes={},
@@ -95,17 +95,34 @@ class Blueprint(abc.ABC):
         return self._schema.depends_on
 
 
+class BlueprintVolume:
+
+    def __init__(self, name: str, destination: str):
+        self._name = name
+        self._destination = destination
+
+    @property
+    def name(self):
+        return self._name
+
+    @property
+    def destination(self):
+        return self._destination
+
+
 class BlueprintInstance(WaterDisplayable):
 
     def __init__(self,
                  name: str,
                  platform: 'Platform',
+                 volumes: Optional[List[BlueprintVolume]] = None,
                  blueprint: Optional[Blueprint] = None):
         self._id = None
         self._name = name
         self._platform = platform
         self._running = False
-        self.blueprint = blueprint
+        self._volumes = volumes or []
+        self._blueprint = blueprint
 
     @property
     def id(self):
@@ -130,6 +147,10 @@ class BlueprintInstance(WaterDisplayable):
     @running.setter
     def running(self, value: bool):
         self._running = value
+
+    @property
+    def volumes(self) -> List[BlueprintVolume]:
+        return self._volumes
 
     @property
     def blueprint(self) -> Blueprint:
@@ -167,6 +188,7 @@ class BlueprintInstanceList(list, WaterDisplayable):
             instances['id'].append(blueprint_instance.id)
             instances['name'].append(blueprint_instance.name)
             instances['platform'].append(blueprint_instance.platform.name if blueprint_instance.platform else 'Unknown')
-            instances['blueprint'].append(blueprint_instance.blueprint.name if blueprint_instance.blueprint else 'Unknown')
+            instances['blueprint'].append(
+                blueprint_instance.blueprint.name if blueprint_instance.blueprint else 'Unknown')
             instances['running'].append(blueprint_instance.running)
         return instances

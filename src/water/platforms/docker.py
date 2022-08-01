@@ -20,26 +20,42 @@
 #  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 #  SOFTWARE.
 
-from typing import List, Optional
+from typing import Optional, List
 import json
+import shutil
 
 from water import MurkyWaterException
-from .platform import Platform
-from water.blueprints import Blueprint, BlueprintInstance, BlueprintInstanceList
+from .platform import WaterPlatform
+from water.blueprints import Blueprint, BlueprintInstance, BlueprintVolume
 from water.constants import LABEL_BLUEPRINT, LABEL_CREATED_BY
 
 
-class Docker(Platform):
-    name: str = 'docker'
-    description: str = 'Docker is the classic containerisation platform'
-    executable_name = 'docker'
+class Docker(WaterPlatform):
+    """
+    Docker platform
+    """
 
     def __init__(self, runtime: 'Runtime'):
         super().__init__(runtime)
+        self._name = 'docker'
+        self._description = 'Docker is the classic containerisation platform'
+        self._executable_name = 'docker'
+        self._executable = shutil.which(self._executable_name)
+        self._available = None
+
+    @property
+    def available(self):
+        if self._available is not None:
+            return self._available
+        if not self._executable:
+            self._available = False
+            return False
         try:
-            self._execute(['ps', '-q'])
+            self.execute(['container', 'ps', '-q'])
+            self._available = True
         except MurkyWaterException:
             self._available = False
+        return self._available
 
     def instance_create(self, blueprint_instance: BlueprintInstance):
         cmd = ['container', 'run', '-d', '--name', blueprint_instance.name]
@@ -53,68 +69,45 @@ class Docker(Platform):
         for host, container in blueprint_instance.blueprint.ports.items():
             cmd.extend(['-p', f'{host}:{container}'])
         cmd.append(blueprint_instance.blueprint.image)
-        result = self._execute(cmd)
+        result = self.execute(cmd)
         blueprint_instance.id = result.stdout.strip()
         blueprint_instance.running = True
 
-    def instance_list(self, blueprint: Optional[Blueprint] = None) -> BlueprintInstanceList:
-        platform_instances = BlueprintInstanceList()
-        if not self.available():
+    def instance_list(self, blueprint: Optional[Blueprint] = None) -> List[BlueprintInstance]:
+        platform_instances: List[BlueprintInstance] = []
+        if not self.available:
             return platform_instances
-        result = self._execute(['container', 'ls', '--all', '--quiet'])
+        result = self.execute(['container', 'ls', '--all', '--quiet'])
         container_ids = [container_id for container_id in result.stdout.split('\n') if container_id != '']
         if len(container_ids) == 0:
             return platform_instances
-        result = self._execute(['container', 'inspect', str.join(' ', container_ids)])
+        result = self.execute(['container', 'inspect', str.join(' ', container_ids)])
         raw_instances = json.loads(result.stdout)
         for raw_instance in raw_instances:
-            if not raw_instance.get('Labels', {}).get(LABEL_CREATED_BY):
+            if not raw_instance.get('Config', {}).get('Labels', {}).get(LABEL_CREATED_BY):
                 continue
-            blueprint_label = raw_instance.get('Labels', {}).get(LABEL_BLUEPRINT)
-
-            instance = BlueprintInstance(name=raw_instance.get('Name', 'Unknown'),
+            blueprint_label = raw_instance.get('Config', {}).get('Labels', {}).get(LABEL_BLUEPRINT)
+            instance_name = raw_instance.get('Name', 'Unknown').strip('/')
+            volumes = []
+            for mount in raw_instance.get('Mounts', []):
+                if mount['Type'] != 'volume':
+                    continue
+                volumes.append(BlueprintVolume(name=mount['Name'],
+                                               destination=mount['Destination']))
+            instance = BlueprintInstance(name=instance_name,
                                          platform=self,
-                                         blueprint=self.runtime.available_blueprints.get(blueprint_label))
+                                         volumes=volumes,
+                                         blueprint=self.runtime.blueprints.get(blueprint_label))
             instance.id = raw_instance['Id']
             instance.running = raw_instance.get('State', {}).get('Running')
             platform_instances.append(instance)
         return platform_instances
 
     def instance_show(self, name: str, blueprint: Optional[Blueprint] = None):
-        result = self._execute(['container', 'inspect', blueprint.name])
-
-    def instance_remove(self, name: str, blueprint: Optional[Blueprint] = None):
-        self._execute(['container', 'stop', name])
-        self._execute(['container', 'rm', name])
-        [self._execute(['volume', 'rm', vol]) for vol in blueprint.volumes]
-        blueprint_instance = filter(lambda _: _.name == name and _.platform == self, self.runtime.instances)
-        if blueprint_instance:
-            self.runtime.remove_instance(blueprint_instance)
-
-    def volume_create(self, name: str):
-        self._execute(['volume', 'create',
-                       '--label', 'org.mrmat.created-by=water',
-                       name])
-        info = self._execute(['volume', 'inspect', name])
-
-        # console.print(f'Volume {name} successfully created')
-
-    def volume_list(self):
-        result = self._execute(['volume', 'ls', '--format', '{{ json . }}'])
-        raw_volumes = [e for e in result.stdout.split('\n') if e.startswith('{')]
-        result = []
-        # for raw_volume in raw_volumes:
-        #     json_volume = json.loads(raw_volume)
-        #     result.append(water.schema.Volume(name=json_volume['Name'],
-        #                                       scope=json_volume['Scope'],
-        #                                       driver=json_volume['Driver'],
-        #                                       labels=json_volume['Labels'],
-        #                                       mountpoint=json_volume['Mountpoint']))
-        return result
-
-    def volume_show(self):
+        # result = self.execute(['container', 'inspect', blueprint.name])
         pass
 
-    def volume_remove(self, name: str):
-        self._execute(['volume', 'rm', name])
-        # console.print(f'Volume {name} successfully removed')
+    def instance_remove(self, blueprint_instance: BlueprintInstance):
+        self.execute(['container', 'stop', blueprint_instance.name])
+        self.execute(['container', 'rm', blueprint_instance.name])
+        [self.execute(['volume', 'rm', vol.name]) for vol in blueprint_instance.volumes]

@@ -29,7 +29,7 @@ from water.runtime import Runtime
 
 
 def config_show(runtime: Runtime, args: argparse.Namespace) -> int:
-    runtime.output.displayable(runtime.raw_config)
+    runtime.output.config_show(runtime)
     return 0
 
 
@@ -67,7 +67,7 @@ def cook_up(runtime: Runtime, args: argparse.Namespace) -> int:
         #     if blueprint_model.kind == 'postgres':
         #         blueprint_model.merge_defaults(water.blueprints.postgres.PostgreSQL.defaults)
         # console.print(parsed_recipe)
-    except Exception as e:
+    except Exception:
         #console.print_exception()
         return 1
 
@@ -76,7 +76,7 @@ def cook_show(runtime: Runtime, args: argparse.Namespace) -> int:
     try:
         runtime.output.cook_show(runtime)
         return 0
-    except Exception as e:
+    except Exception:
         #console.print_exception()
         return 1
 
@@ -85,7 +85,7 @@ def cook_down(runtime: Runtime, args: argparse.Namespace) -> int:
     try:
         [blueprint.remove(runtime, args) for blueprint in runtime.recipe.blueprints]
         return 0
-    except Exception as e:
+    except Exception:
         #console.print_exception()
         return 1
 
@@ -151,13 +151,13 @@ def main() -> int:
     runtime = None
     try:
         runtime = Runtime()
-        [blueprint.cli_prepare(subparsers) for blueprint in runtime.available_blueprints.values()]
-        [platform.cli_prepare(subparsers) for platform in runtime.available_platforms.values()]
+        [blueprint.cli_prepare(subparsers) for blueprint in runtime.blueprints.values()]
+        [platform.cli_prepare(subparsers) for platform in runtime.platforms.values()]
         runtime.cli_prepare(parser)
         args = parser.parse_args()
         runtime.cli_assess(args)
-        [blueprint.cli_assess(args) for blueprint in runtime.available_blueprints.values()]
-        [platform.cli_assess(args) for platform in runtime.available_platforms.values()]
+        [blueprint.cli_assess(args) for blueprint in runtime.blueprints.values()]
+        [platform.cli_assess(args) for platform in runtime.platforms.values()]
 
         # Execute the desired command
         if hasattr(args, 'cmd'):

@@ -22,6 +22,7 @@
 
 from typing import List, Optional
 import json
+import shutil
 
 from .docker import Docker
 from water.blueprints import Blueprint, BlueprintInstance
@@ -29,21 +30,29 @@ from water.constants import LABEL_BLUEPRINT, LABEL_CREATED_BY
 
 
 class Nerdctl(Docker):
-    name: str = 'nerdctl'
-    description: str = 'nerdctl is a modern CLI for a containerd implementation, brought to you ' \
-                       'via Rancher Desktop (for example).'
-    executable_name = 'nerdctl'
+    """
+    Nerdctl platform as a client for containerd, such as by Rancher Desktop
+    """
+
+    def __init__(self, runtime: 'Runtime'):
+        super().__init__(runtime)
+        self._name = 'nerdctl'
+        self._description = 'nerdctl is a modern CLI for a containerd implementation, brought to you via ' \
+                            'Rancher Desktop (for example).'
+        self._executable_name = 'nerdctl'
+        self._executable = shutil.which(self._executable_name)
+        self._available = False
 
     def instance_list(self, blueprint: Optional[Blueprint] = None) -> List[BlueprintInstance]:
-        if not self.available():
+        if not self.available:
             return []
-        result = self._execute(['container', 'ls', '--all', '--quiet'])
+        result = self.execute(['container', 'ls', '--all', '--quiet'])
         container_ids = [container_id for container_id in result.stdout.split('\n') if container_id != '']
         if len(container_ids) == 0:
             return []
         cmd = ['container', 'inspect', '--mode=native']
         cmd.extend(container_ids)
-        result = self._execute(cmd)
+        result = self.execute(cmd)
         raw_instances = json.loads(result.stdout)
         instances: List[BlueprintInstance] = []
         for raw_instance in raw_instances:
@@ -54,7 +63,7 @@ class Nerdctl(Docker):
 
             instance = BlueprintInstance(name=raw_instance.get('Labels', {}).get('nerdctl/name', 'Unknown'),
                                          platform=self,
-                                         blueprint=self.runtime.available_blueprints.get(blueprint_label))
+                                         blueprint=self.runtime.blueprints.get(blueprint_label))
             instance.id = raw_instance['ID']
             instance.running = False if status_label is None else status_label == 'running'
             instances.append(instance)

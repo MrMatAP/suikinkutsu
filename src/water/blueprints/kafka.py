@@ -21,15 +21,16 @@
 #  SOFTWARE.
 
 from argparse import Namespace
-import secrets
 
 from water.schema import BlueprintSchema
-from water.exceptions import MurkyWaterException
 from water.constants import LABEL_BLUEPRINT, LABEL_CREATED_BY
 from .blueprint import Blueprint
 
 
 class Kafka(Blueprint):
+    """
+    Kafka blueprint
+    """
     name: str = 'kafka'
     description: str = 'Kafka'
     _defaults: BlueprintSchema = BlueprintSchema(

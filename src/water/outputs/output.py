@@ -36,6 +36,9 @@ class WaterDisplayable(abc.ABC):
 
 
 class Output(abc.ABC):
+    """
+    Abstract base class for output
+    """
     name: str = 'BasePlatform'
 
     def __init__(self, runtime: 'Runtime'):
@@ -91,7 +94,7 @@ class Output(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def config(self, runtime):
+    def config_show(self, runtime):
         pass
 
     @abc.abstractmethod

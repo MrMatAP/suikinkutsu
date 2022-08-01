@@ -27,6 +27,9 @@ from water.constants import LABEL_BLUEPRINT, LABEL_CREATED_BY
 
 
 class Jaeger(Blueprint):
+    """
+    Jaeger blueprint
+    """
     name: str = 'jaeger'
     description: str = 'Jaeger Tracing'
     _defaults: BlueprintSchema = BlueprintSchema(
@@ -72,9 +75,6 @@ class Jaeger(Blueprint):
                                           dest='name',
                                           required=True,
                                           help='Instance name')
-
-    def cli_assess(self, args: Namespace):
-        super().cli_assess(args)
 
     def jaeger_create(self, runtime, args: Namespace):
         runtime.platform.service_create(self)

@@ -28,6 +28,9 @@ from water.schema import RecipeSchema
 
 
 class Recipe:
+    """
+    A recipe
+    """
 
     def __init__(self, runtime):
         self._blueprints: Dict[str, Type[Blueprint]] = {}
@@ -42,7 +45,7 @@ class Recipe:
                     raise MurkyWaterException(msg=f'Blueprint {bp_schema.kind} for instance {name} is not available')
                 blueprint_instance = runtime.available_blueprints[bp_schema.kind](name, bp_schema)
                 self.blueprints[name] = blueprint_instance
-        except Exception as e:
+        except Exception:
             pass
             #console.print_exception()
 

@@ -21,9 +21,7 @@
 #  SOFTWARE.
 
 from collections import OrderedDict
-from datetime import datetime
 from typing import Optional, Dict, List
-from enum import Enum, unique
 from pydantic import BaseModel, Field
 
 from water.outputs import WaterDisplayable
@@ -39,6 +37,9 @@ class WaterConfiguration(BaseModel, WaterDisplayable):
 
 
 class BlueprintSchema(BaseModel):
+    """
+    A blueprint schema
+    """
     platform: Optional[str]
     image: Optional[str]
     labels: Optional[Dict[str, str]]

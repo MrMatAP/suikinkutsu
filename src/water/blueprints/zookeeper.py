@@ -21,10 +21,8 @@
 #  SOFTWARE.
 
 from argparse import Namespace
-import secrets
 
 from water.schema import BlueprintSchema
-from water.exceptions import MurkyWaterException
 from water.constants import LABEL_BLUEPRINT, LABEL_CREATED_BY
 from .blueprint import Blueprint
 
@@ -67,9 +65,6 @@ class Zookeeper(Blueprint):
                                       dest='name',
                                       required=True,
                                       help='Instance name')
-
-    def cli_assess(self, args: Namespace):
-        super().cli_assess(args)
 
     def zookeeper_create(self, runtime, args: Namespace):
         runtime.platform.service_create(self)
