@@ -39,13 +39,13 @@ workflow:
       STATE: "mr-eval"
   #
   # If we get a push to the branch from which we intend to make releases then do a release
-  - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_REF_NAME == "master"'
+  - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_REF_NAME == "main"'
     variables:
       STATE: "release"
   #
   # This is a regular push event outside an MR
-  # Don't build for a push to any branch but master
-  - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_REF_NAME != "master"'
+  # Don't build for a push to any branch but main
+  - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_REF_NAME != "main"'
     when: never
     variables:
       STATE: "branch-push"
