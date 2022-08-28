@@ -41,10 +41,16 @@ class Kafka(Blueprint):
         },
         environment={
             'KAFKA_ZOOKEEPER_CONNECT': 'zk:32181',
-            'KAFKA_ADVERTISED_LISTENERS': 'PLAINTEXT://localhost:9092',
-            'KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR': 1
+            'KAFKA_LISTENER_SECURITY_PROTOCOL_MAP': 'PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT',
+            'KAFKA_ADVERTISED_LISTENERS': 'PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092',
+            'KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR': 1,
+            'KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS': 0,
+            'KAFKA_TRANSACTION_STATE_LOG_MIN_ISR': 1,
+            'KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR': 1
         },
-        ports={'9092': '9092'},
+        ports={
+            '29092': '29092'
+        },
         labels={
             LABEL_BLUEPRINT: 'kafka',
             LABEL_CREATED_BY: 'water'
@@ -78,10 +84,10 @@ class Kafka(Blueprint):
         runtime_secrets = self.runtime.secrets
         if args.name not in runtime_secrets:
             runtime_secrets[args.name] = {
-                'connection': f'{args.name}:9092'
+                'connection': f'{args.name}:29092'
             }
         else:
-            runtime_secrets[args.name]['connection'] = f'{args.name}:9092'
+            runtime_secrets[args.name]['connection'] = f'{args.name}:29092'
         self.runtime.secrets = runtime_secrets
 
     def kafka_remove(self, runtime, args: Namespace):
