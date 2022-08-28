@@ -68,6 +68,7 @@ class Docker(WaterPlatform):
             cmd.extend(['--mount', f'type=volume,source={src},destination={dst}'])
         for host, container in blueprint_instance.blueprint.ports.items():
             cmd.extend(['-p', f'{host}:{container}'])
+        cmd.extend(['--hostname', blueprint_instance.name])
         if len(blueprint_instance.blueprint.depends_on) > 0:
             cmd.extend(['--link', ','.join(blueprint_instance.blueprint.depends_on)])
         cmd.append(blueprint_instance.blueprint.image)
