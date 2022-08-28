@@ -41,10 +41,10 @@ class Kafka(Blueprint):
         },
         environment={
             'KAFKA_ZOOKEEPER_CONNECT': 'zk:32181',
-            'KAFKA_ADVERTISED_LISTENERS': 'PLAINTEXT://localhost:29092',
+            'KAFKA_ADVERTISED_LISTENERS': 'PLAINTEXT://localhost:9092',
             'KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR': 1
         },
-        ports={'29092': '29092'},
+        ports={'9092': '9092'},
         labels={
             LABEL_BLUEPRINT: 'kafka',
             LABEL_CREATED_BY: 'water'
