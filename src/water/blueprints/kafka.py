@@ -63,7 +63,7 @@ class Kafka(Blueprint):
                                          help='Instance name')
         kafka_create_parser.set_defaults(cmd=self.kafka_create)
 
-        kafka_remove_parser = kafka_subparser.add_parser(name='remove', help='Remove Kafka instances')
+        kafka_remove_parser = kafka_subparser.add_parser(name='remove', help='Remove a Kafka instance')
         kafka_remove_parser.add_argument('-n', '--instance-name',
                                          dest='name',
                                          required=True,
@@ -78,10 +78,10 @@ class Kafka(Blueprint):
         runtime_secrets = self.runtime.secrets
         if args.name not in runtime_secrets:
             runtime_secrets[args.name] = {
-                'connection': f'{args.name}:29092'
+                'connection': f'{args.name}:9092'
             }
         else:
-            runtime_secrets[args.name]['connection'] = f'{args.name}:29092'
+            runtime_secrets[args.name]['connection'] = f'{args.name}:9092'
         self.runtime.secrets = runtime_secrets
 
     def kafka_remove(self, runtime, args: Namespace):
