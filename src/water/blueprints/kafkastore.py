@@ -35,7 +35,9 @@ class KafkaStore(Blueprint):
     description: str = 'Schema Registry Store for Kafka'
     _defaults: BlueprintSchema = BlueprintSchema(
         image='confluentinc/cp-schema-registry:5.4.9',
-        volumes={},
+        volumes={
+            'kafkastore_etcvol': '/etc/schema-registry/secrets'
+        },
         environment={
             'SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS': 'kafka:9092',
             'SCHEMA_REGISTRY_KAFKASTORE_LISTENERS': 'http://0.0.0.0:8081',
