@@ -24,5 +24,6 @@ from .blueprint import Blueprint, BlueprintInstance, BlueprintVolume, BlueprintI
 from .postgres import PostgreSQL
 from .keycloak import Keycloak
 from .jaeger import Jaeger
+from .ksqldb import KSQLDB
 from .kafka import Kafka
 from .zookeeper import Zookeeper
