@@ -70,6 +70,11 @@ class WaterPlatform(WaterExtension):
 
     @property
     def available(self):
+        """
+        Determine whether the platform is available. This ideally occurs with some caching and is done only once.
+        Returns:
+            True if the platform is available to schedule instances on, False otherwise
+        """
         return self._available
 
     def cli_prepare(self, parser) -> None:

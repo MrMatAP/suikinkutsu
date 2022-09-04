@@ -25,7 +25,7 @@ import json
 import shutil
 
 from .docker import Docker
-from water.blueprints import Blueprint, BlueprintInstance
+from water.blueprints import Blueprint, BlueprintInstance, BlueprintVolume
 from water.constants import LABEL_BLUEPRINT, LABEL_CREATED_BY
 
 
@@ -41,30 +41,54 @@ class Nerdctl(Docker):
                             'Rancher Desktop (for example).'
         self._executable_name = 'nerdctl'
         self._executable = shutil.which(self._executable_name)
-        self._available = False
+        self._available = None
 
+    @property
+    def available(self):
+        if self._available is not None:
+            return self._available
+        if not self._executable:
+            self._available = False
+            return False
+        try:
+            self.execute(['container', 'ls', '-q'])
+            self._available = True
+        except MurkyWaterException:
+            self._available = False
+        return self._available
+
+    #
+    # nerdctl features a --mode=native which in some ways may be more detailed but for what we parse it's currently
+    # easier to use the same method as Docker. Particularly the mounts are easier to parse.
     def instance_list(self, blueprint: Optional[Blueprint] = None) -> List[BlueprintInstance]:
+        platform_instances: List[BlueprintInstance] = []
         if not self.available:
-            return []
+            return platform_instances
         result = self.execute(['container', 'ls', '--all', '--quiet'])
         container_ids = [container_id for container_id in result.stdout.split('\n') if container_id != '']
         if len(container_ids) == 0:
-            return []
-        cmd = ['container', 'inspect', '--mode=native']
+            return platform_instances
+        cmd = ['container', 'inspect']
         cmd.extend(container_ids)
         result = self.execute(cmd)
         raw_instances = json.loads(result.stdout)
-        instances: List[BlueprintInstance] = []
         for raw_instance in raw_instances:
-            if not raw_instance.get('Labels', {}).get(LABEL_CREATED_BY):
+            if not raw_instance.get('Config', {}).get('Labels', {}).get(LABEL_CREATED_BY):
                 continue
-            blueprint_label = raw_instance.get('Labels', {}).get(LABEL_BLUEPRINT)
-            status_label = raw_instance.get('Process', {}).get('Status', {}).get('Status')
-
-            instance = BlueprintInstance(name=raw_instance.get('Labels', {}).get('nerdctl/name', 'Unknown'),
+            blueprint_label = raw_instance.get('Config', {}).get('Labels', {}).get(LABEL_BLUEPRINT)
+            instance_name = raw_instance.get('Name', 'Unknown').strip('/')
+            volumes = []
+            for mount in raw_instance.get('Mounts', []):
+                if mount['Type'] != 'volume':
+                    continue
+                volumes.append(BlueprintVolume(name=mount['Name'],
+                                               destination=mount['Destination']))
+            instance = BlueprintInstance(name=instance_name,
                                          platform=self,
+                                         volumes=volumes,
                                          blueprint=self.runtime.blueprints.get(blueprint_label))
-            instance.id = raw_instance['ID']
-            instance.running = False if status_label is None else status_label == 'running'
-            instances.append(instance)
-        return instances
+            instance.id = raw_instance['Id']
+            instance.running = raw_instance.get('State', {}).get('Running')
+            platform_instances.append(instance)
+        return platform_instances
+
