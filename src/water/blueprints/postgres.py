@@ -38,7 +38,7 @@ class PostgreSQL(Blueprint):
     name: str = 'postgres'
     description: str = 'PostgreSQL is a modern relational database'
     _defaults: BlueprintSchema = BlueprintSchema(
-        image='postgres:14.3-alpine',
+        image='postgres:14.5',
         volumes={'pg_datavol': '/var/lib/postgresql/data'},
         environment={
             'POSTGRES_DB': 'localdb',
@@ -87,10 +87,28 @@ class PostgreSQL(Blueprint):
                                            help='Role password')
         pg_role_create_parser.add_argument('--create-schema',
                                            dest='create_schema',
+                                           action='store_true',
                                            required=False,
                                            default=True,
                                            help='Create an associated schema for this role')
         pg_role_create_parser.set_defaults(cmd=self.pg_role_create)
+
+        pg_role_remove_parser = pg_role_subparser.add_parser(name='remove', help='Remove a role')
+        pg_role_remove_parser.add_argument('-n', '--instance_name',
+                                           dest='name',
+                                           required=True,
+                                           help='Instance name')
+        pg_role_remove_parser.add_argument('-r', '--role-name',
+                                           dest='role_name',
+                                           required=True,
+                                           help='Role name')
+        pg_role_remove_parser.add_argument('--remove-schema',
+                                           dest='remove_schema',
+                                           action='store_true',
+                                           required=False,
+                                           default=False,
+                                           help='Remove the schema associated with this role')
+        pg_role_remove_parser.set_defaults(cmd=self.pg_role_remove)
 
         pg_dumpall_parser = pg_subparser.add_parser(name='dumpall', help='PostgreSQL dumpall')
         pg_dumpall_parser.add_argument('-n', '--instance-name',
@@ -147,23 +165,37 @@ class PostgreSQL(Blueprint):
                 }
             }
         else:
-            runtime_secrets[args.name][
-                'connection'] = f'postgresql://localhost:5432/{self.environment.get("POSTGRES_DB")}'
-            runtime_secrets_roles = runtime_secrets[args.name]['roles']
-            runtime_secrets_roles['postgres'] = self.environment.get('POSTGRES_PASSWORD')
+            runtime_secrets[args.name]['connection'] = f'postgresql://localhost:5432/' \
+                                                       f'{self.environment.get("POSTGRES_DB")}'
+            runtime_secrets[args.name]['roles']['postgres'] = self.environment.get('POSTGRES_PASSWORD')
         self.runtime.secrets = runtime_secrets
 
     def pg_remove(self, runtime: 'Runtime', args: Namespace):
         blueprint_instance = self.runtime.instance_get(name=args.name, blueprint=self)
         self.runtime.instance_remove(blueprint_instance)
 
-    def pg_role_create(self, runtime: 'Runtime', args: Namespace):
-        instance_secrets = self.runtime.secrets.get(args.name)
-        if instance_secrets is None:
-            raise MurkyWaterException(msg='No secrets for this instance')
-        conn = psycopg2.connect(instance_secrets.get('connection'),
+    def _pg_conn(self, instance_name: str):
+        """
+        Obtain an administrative connection to the PostgreSQL instance. You currently must close the connection yourself.
+        Args:
+            instance_name: Name of the PostgreSQL instance to connect to
+
+        Returns:
+            A DBAPI Connection object
+        """
+        instance_secrets = self.runtime.secrets.get(instance_name, {})
+        instance_connection = instance_secrets.get('connection')
+        if instance_connection is None:
+            raise MurkyWaterException(msg='Missing connection string for this instance in secrets')
+        instance_password = instance_secrets.get('roles', {}).get('postgres')
+        if instance_password is None:
+            raise MurkyWaterException(msg='Missing postgres password for this instance in secrets')
+        return psycopg2.connect(instance_connection,
                                 user='postgres',
-                                password=instance_secrets['roles'].get('postgres'))
+                                password=instance_password)
+
+    def pg_role_create(self, runtime: 'Runtime', args: Namespace):
+        conn = self._pg_conn(args.name)
         cur = conn.cursor()
         query = sql.SQL('CREATE ROLE {} ENCRYPTED PASSWORD %s LOGIN').format(sql.Identifier(args.role_name))
         cur.execute(query, (args.role_password,))
@@ -177,9 +209,22 @@ class PostgreSQL(Blueprint):
         conn.commit()
         cur.close()
         conn.close()
-        runtime_secrets = self.runtime.secrets
-        runtime_secrets_roles = runtime_secrets[args.name]['roles']
-        runtime_secrets_roles[args.role_name] = args.role_password
+        self.runtime.secrets.get(args.name, {}).get('roles', {})[args.role_name] = args.role_password
+        self.runtime.secrets_save()
+
+    def pg_role_remove(self, runtime: 'Runtime', args: Namespace):
+        conn = self._pg_conn(args.name)
+        cur = conn.cursor()
+        if args.remove_schema:
+            query = sql.SQL('DROP SCHEMA IF EXISTS {}').format(sql.Identifier(args.role_name))
+            cur.execute(query)
+        query = sql.SQL('DROP ROLE {}').format(sql.Identifier(args.role_name))
+        cur.execute(query)
+        conn.commit()
+        cur.close()
+        conn.close()
+        if args.role_name in self.runtime.secrets.get(args.name, {}).get('roles'):
+            del self.runtime.secrets[args.name]['roles'][args.role_name]
         self.runtime.secrets_save()
 
     def pg_dumpall(self, runtime: 'Runtime', args: Namespace):
