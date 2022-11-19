@@ -93,8 +93,8 @@ build-job:
       # Prepare venv
       python -mvenv "${VENV_DIR}"
       . ${VENV_DIR}/bin/activate
-      pip --cache-dir $PIP_CACHE_DIR install -U pip
-      pip --cache-dir $PIP_CACHE_DIR install -U -r ${CI_PROJECT_DIR}/requirements.txt
+      pip --cache-dir $PIP_CACHE_DIR install -U pip setuptools
+      pip install -r ${CI_PROJECT_DIR}/requirements.txt
       PYTHONPATH=$CI_PROJECT_DIR python -m build -n --wheel
     - |
       # Linting

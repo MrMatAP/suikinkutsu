@@ -5,15 +5,15 @@
 
 # Build/Test requirements
 
-build~=0.7.0             # MIT
-wheel~=0.37.1            # MIT
-pylint~=2.12.2           # GPL-2.0-or-later
-pytest~=7.0.1            # MIT
-pytest-cov~=3.0.0        # MIT
+build~=0.9.0             # MIT
+wheel~=0.38.4            # MIT
+pylint~=2.15.5           # GPL-2.0-or-later
+pytest~=7.2.0            # MIT
+pytest-cov~=4.0.0        # MIT
 
 # Runtime requirements
 
-rich~=12.4.1             # MIT
+rich~=12.6.0             # MIT
 pydantic~=1.9.1          # MIT
 pyyaml~=6.0              # MIT
 psycopg2-binary~=2.9.3   # LGPL with exceptions

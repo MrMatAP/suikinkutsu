@@ -1,3 +1,47 @@
 [build-system]
-requires = ['setuptools', 'wheel']
+requires = [
+    'setuptools>=65.6.0',
+    'wheel~=0.38.4',
+    'pylint~=2.15.5',       # MIT
+    'pytest~=7.2.0',        # GPL-2.0-or-later
+    'pytest-cov~=4.0.0'     # MIT
+]
 build-backend = 'setuptools.build_meta'
+
+[project]
+name = "water"
+description = "A tool for developer efficiency when they are on the road, using container-based infrastructure, because we all cook with water."
+urls = { "Sources" = "https://gitlab.com/mrmatorg/water" }
+keywords = ["utility", "development"]
+readme = "README.md"
+license = { text = "MIT" }
+authors = [
+    { name = "Mathieu Imfeld", email = "imfeldma+9jqerw@gmail.com" }
+]
+maintainers = [
+    { name = "Mathieu Imfeld", email = "imfeldma+9jqerw@gmail.com" }
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "License :: OSI Approved :: MIT",
+    "Programming Language :: Python :: 3.10"
+]
+requires-python = ">=3.10"
+dynamic = ["version"]
+dependencies = [
+    "rich~=12.6.0",             # MIT
+    "pydantic~=1.10.2",         # MIT
+    "pyyaml>=6.0",              # MIT
+    "psycopg2-binary~=2.9.5"    # LGPL with exceptions
+]
+
+[tool.setuptools.dynamic]
+version = { attr = "ci.version" }
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["water"]
+namespaces = false
+
+[project.scripts]
+water = "water.cli:main"
