@@ -26,10 +26,20 @@ import argparse
 
 from water import __version__, MurkyWaterException
 from water.runtime import Runtime
+from water.outputs import OutputEntry, OutputSeverity
 
 
 def config_show(runtime: Runtime, args: argparse.Namespace) -> int:
-    runtime.output.config_show(runtime)
+    runtime.output.print(OutputEntry(title='Configuration',
+                                     columns=['Key', 'Value', 'Source'],
+                                     msg=[
+                                         ['config_file', str(runtime.config_file.value), str(runtime.config_file.source)],
+                                         ['config_dir', str(runtime.config_dir.value), str(runtime.config_dir.source)],
+                                         ['output', runtime.output_class.value, str(runtime.output_class.source)],
+                                         ['platform', runtime.platform_class.value, str(runtime.platform_class.source)],
+                                         ['recipe_file', str(runtime.recipe_file.value), str(runtime.platform_class.source)],
+                                         ['secrets_file', str(runtime.secrets_file.value), str(runtime.secrets_file.source)]
+                                     ]))
     return 0
 
 
@@ -41,17 +51,31 @@ def config_set(runtime: Runtime, args: argparse.Namespace) -> int:
 
 
 def platform_list(runtime: Runtime, args: argparse.Namespace) -> int:
-    runtime.output.platform_list(runtime)
+    runtime.output.print(OutputEntry(title='Platforms',
+                                     columns=['Platform', 'Available', 'Description'],
+                                     msg=[[name, str(pf.available), pf.description] for name, pf in runtime.platforms.items()]))
     return 0
 
 
 def blueprint_list(runtime: Runtime, args: argparse.Namespace) -> int:
-    runtime.output.blueprint_list(runtime)
+    runtime.output.print(OutputEntry(title='Blueprints',
+                                     columns=['Blueprint', 'Description'],
+                                     msg=[[name, bp.description] for name, bp in runtime.blueprints.items()]))
     return 0
 
 
 def instance_list(runtime: Runtime, args: argparse.Namespace) -> int:
-    runtime.output.instance_list(runtime)
+    runtime.output.print(OutputEntry(title='Instances',
+                                     columns=['Id', 'Name', 'Platform', 'Blueprint', 'Running', 'Volumes'],
+                                     msg=[[
+                                            i.id,
+                                            i.name,
+                                            i.platform.name,
+                                            i.blueprint.name if i.blueprint else 'Unknown',
+                                            str(i.running),
+                                            # TODO: This is no good in structured output
+                                            '\n'.join([vol.name for vol in i.volumes])]
+                                            for i in runtime.instances]))
     return 0
 
 
@@ -68,7 +92,7 @@ def cook_up(runtime: Runtime, args: argparse.Namespace) -> int:
         #         blueprint_model.merge_defaults(water.blueprints.postgres.PostgreSQL.defaults)
         # console.print(parsed_recipe)
     except Exception:
-        #console.print_exception()
+        # console.print_exception()
         return 1
 
 
@@ -77,7 +101,7 @@ def cook_show(runtime: Runtime, args: argparse.Namespace) -> int:
         runtime.output.cook_show(runtime)
         return 0
     except Exception:
-        #console.print_exception()
+        # console.print_exception()
         return 1
 
 
@@ -86,7 +110,7 @@ def cook_down(runtime: Runtime, args: argparse.Namespace) -> int:
         [blueprint.remove(runtime, args) for blueprint in runtime.recipe.blueprints]
         return 0
     except Exception:
-        #console.print_exception()
+        # console.print_exception()
         return 1
 
 

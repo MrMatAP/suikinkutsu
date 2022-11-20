@@ -50,6 +50,9 @@ class Source(enum.Enum):
     def __str__(self):
         return self.value
 
+    def __repr__(self):
+        return f'Source.{self.name}'
+
 
 class ConfigurableItem:
     """
@@ -94,12 +97,8 @@ class Runtime:
     """
 
     def __init__(self):
-        self._outputs = self._find_extensions(Output)
-        self._platforms = self._find_extensions(WaterPlatform)
-        self._blueprints = self._find_extensions(Blueprint)
-        self._instances: List[BlueprintInstance] = []
-        self._secrets = {}
-
+        self._output_class = ConfigurableItem('output_class', Source.DEFAULT, DEFAULT_OUTPUT_CLASS)
+        self._platform_class = ConfigurableItem('platform_class', Source.DEFAULT, DEFAULT_PLATFORM_CLASS)
         self._config_file = ConfigurableItem('config_file', Source.DEFAULT, pathlib.Path(DEFAULT_CONFIG_FILE))
         self._config_dir = ConfigurableItem('config_dir', Source.DEFAULT, pathlib.Path(DEFAULT_CONFIG_DIR))
         self._recipe_file = ConfigurableItem('recipe_file', Source.DEFAULT, pathlib.Path(DEFAULT_RECIPE_FILE))
@@ -108,9 +107,6 @@ class Runtime:
                                               pathlib.Path(self._config_dir.value
                                                            /
                                                            f'{self._recipe_file.value.parent.name}.json'))
-        self._output_class = ConfigurableItem('output_class', Source.DEFAULT, DEFAULT_OUTPUT_CLASS)
-        self._platform_class = ConfigurableItem('platform_class', Source.DEFAULT, DEFAULT_PLATFORM_CLASS)
-
         if ENV_CONFIG_FILE in os.environ:
             self._config_file.value = pathlib.Path(os.getenv(ENV_CONFIG_FILE))
             self._config_file.source = Source.ENVIRONMENT
@@ -129,6 +125,14 @@ class Runtime:
         if ENV_PLATFORM_CLASS in os.environ:
             self._platform_class.value = os.getenv(ENV_PLATFORM_CLASS)
             self._platform_class.source = Source.ENVIRONMENT
+
+        self._outputs: Dict[str, Output] = self._find_extensions(Output)
+        #self._platforms = self._find_extensions(WaterPlatform)
+        self._platforms = {}
+        self._blueprints = self._find_extensions(Blueprint)
+        #self._blueprints = {}
+        self._instances: List[BlueprintInstance] = []
+        self._secrets = {}
 
     def cli_prepare(self, parser: ArgumentParser):
         parser.add_argument('-c',
@@ -182,7 +186,7 @@ class Runtime:
         self.secrets_load()
 
     @property
-    def outputs(self):
+    def outputs(self) -> Dict[str, Output]:
         return self._outputs
 
     @property
@@ -304,7 +308,7 @@ class Runtime:
                                 self.instance_list(blueprint, platform)))
         return instances[0] if len(instances) > 0 else None
 
-    def _find_extensions(self, base) -> Dict[str, object]:
+    def _find_extensions(self, base):
         """
         Recursively find all subclasses
         Args:

@@ -26,7 +26,6 @@ from collections import OrderedDict
 from typing import Optional, List
 
 from water.schema import BlueprintSchema
-from water.outputs import WaterDisplayable
 from water.constants import LABEL_BLUEPRINT
 
 
@@ -110,7 +109,7 @@ class BlueprintVolume:
         return self._destination
 
 
-class BlueprintInstance(WaterDisplayable):
+class BlueprintInstance():
 
     def __init__(self,
                  name: str,
@@ -170,7 +169,7 @@ class BlueprintInstance(WaterDisplayable):
         })
 
 
-class BlueprintInstanceList(list, WaterDisplayable):
+class BlueprintInstanceList(list):
 
     def __init__(self, blueprint_instances: List[Blueprint] = None):
         super().__init__()

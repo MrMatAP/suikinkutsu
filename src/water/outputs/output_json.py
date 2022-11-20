@@ -21,14 +21,19 @@
 #  SOFTWARE.
 
 import json
-from .output import Output, WaterDisplayable
+
+from . import OutputEntry
+from .output import Output
 
 
 class JSONWaterOutput(Output):
     """
     JSON output
     """
-    name: str = 'json'
+    name = 'json'
+
+    def print(self, entry: OutputEntry) -> None:
+        print(json.dumps(entry.__dict__()))
 
     def exception(self, ex: Exception) -> None:
         ex_dict = self._exception_dict(ex)
@@ -42,20 +47,3 @@ class JSONWaterOutput(Output):
 
     def error(self, msg: str) -> None:
         print(json.dumps({'ERROR': msg}))
-
-    def displayable(self, displayable: WaterDisplayable):
-        print('JSON')
-
-    def config_show(self, runtime) -> None:
-        config_dict = self._config_dict(runtime)
-        print(json.dumps(config_dict))
-
-    def platform_list(self, runtime):
-        platforms = self._platform_list(runtime)
-        print(json.dumps(platforms))
-
-    def cook_show(self, runtime):
-        pass
-
-    def blueprint_list(self, runtime):
-        pass

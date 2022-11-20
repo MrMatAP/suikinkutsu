@@ -20,7 +20,7 @@
 #  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 #  SOFTWARE.
 
-from .output import WaterDisplayable, Output
+from .output import OutputEntry, OutputSeverity, Output
 from .output_human import HumanWaterOutput
 from .output_json import JSONWaterOutput
 from .output_yaml import YAMLWaterOutput

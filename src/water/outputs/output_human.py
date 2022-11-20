@@ -26,59 +26,53 @@ from rich.tree import Tree
 from rich.columns import Columns
 from rich.box import ROUNDED
 
-from .output import Output, WaterDisplayable
-
-
-console = Console()
+from .output import Output, OutputEntry, OutputSeverity
 
 
 class HumanWaterOutput(Output):
-    """Output for human users"""
+    """
+    Output for humans
+    """
 
-    name: str = 'human'
+    name = 'human'
+
+    def __init__(self, runtime = None):
+        super().__init__()
+        self._console = Console()
+
+    def print(self, entry: OutputEntry):
+        if type(entry.msg) == str:
+            self._console.print(HumanWaterOutput._severity(entry.severity, f'* [{entry.code}] {entry.msg}'))
+            return
+
+        table = Table(title=f'[{entry.code}] {entry.title}' or None,
+                      box=ROUNDED)
+        for col in (entry.columns or []):
+            table.add_column(col)
+        for row in (entry.msg or []):
+            table.add_row(*row)
+        self._console.print(table)
+
+    @staticmethod
+    def _severity(severity: OutputSeverity, msg: str):
+        match severity:
+            case None: return msg
+            case OutputSeverity.DEBUG: return f'[bold yellow]{msg}[/bold yellow]'
+            case OutputSeverity.WARNING: return f'[bold orange]{msg}[/bold orange]'
+            case OutputSeverity.ERROR: return f'[bold red]{msg}[/bold red]'
+        return msg
 
     def exception(self, ex: Exception) -> None:
-        console.print_exception()
+        self._console.print_exception()
 
     def info(self, msg: str) -> None:
-        console.print(msg)
+        self._console.print(msg)
 
     def warning(self, msg: str) -> None:
-        console.print(f'[bold yellow]Warning:[/bold yellow] {msg}')
+        self._console.print(f'[bold yellow]Warning:[/bold yellow] {msg}')
 
     def error(self, msg: str) -> None:
-        console.print(f'[bold red]Error:[/bold red] {msg}')
-
-    def displayable(self, displayable: WaterDisplayable):
-        data = displayable.display_dict()
-        table = Table(title='Test', box=ROUNDED)
-        [table.add_column(column) for column in data.keys()]
-        [table.add_row(row) for row in data.values()]
-        console.print(table)
-
-    def config_show(self, runtime):
-        table = Table(title='Configuration', box=ROUNDED)
-        table.add_column('Key')
-        table.add_column('Value')
-        table.add_column('Source')
-        table.add_row('config_file', str(runtime.config_file.value), str(runtime.config_file.source))
-        table.add_row('config_dir', str(runtime.config_dir.value), str(runtime.config_dir.source))
-        table.add_row('output', runtime.output_class.value, str(runtime.output_class.source))
-        table.add_row('platform', runtime.platform_class.value, str(runtime.platform_class.source))
-        table.add_row('recipe_file', str(runtime.recipe_file.value), str(runtime.recipe_file.source))
-        table.add_row('secrets_file', str(runtime.secrets_file.value), str(runtime.secrets_file.source))
-        console.print(table)
-
-    def platform_list(self, runtime):
-        table = Table(title='Available Platforms', box=ROUNDED)
-        table.add_column('Platform')
-        table.add_column('Available')
-        table.add_column('Description')
-        [table.add_row(name,
-                       str(pf.available),
-                       pf.description)
-            for name, pf in runtime.platforms.items()]
-        console.print(table)
+        self._console.print(f'[bold red]Error:[/bold red] {msg}')
 
     def cook_show(self, runtime):
         tree = Tree('Recipe')
@@ -102,31 +96,7 @@ class HumanWaterOutput(Output):
 
             depends_on_node = node.add('[bold]Depends on:[/bold]')
             [depends_on_node.add(Columns(['[bold]Blueprint:[/bold]', v], width=80)) for v in blueprint.depends_on]
-        console.print(tree)
-
-    def blueprint_list(self, runtime):
-        table = Table(title='Available Blueprints', box=ROUNDED)
-        table.add_column('Blueprint')
-        table.add_column('Description')
-        [table.add_row(name, bp.description) for name, bp in runtime.blueprints.items()]
-        console.print(table)
-
-    def instance_list(self, runtime):
-        table = Table(title='Instances', box=ROUNDED)
-        table.add_column('Id')
-        table.add_column('Name')
-        table.add_column('Platform')
-        table.add_column('Blueprint')
-        table.add_column('Running')
-        table.add_column('Volumes')
-        [table.add_row(i.id,
-                       i.name,
-                       i.platform.name,
-                       i.blueprint.name if i.blueprint else 'Unknown',
-                       str(i.running),
-                       '\n'.join([vol.name for vol in i.volumes]))
-            for i in runtime.instances]
-        console.print(table)
+        self._console.print(tree)
 
     def __repr__(self):
         return 'HumanOutput()'

@@ -24,10 +24,8 @@ from collections import OrderedDict
 from typing import Optional, Dict, List
 from pydantic import BaseModel, Field
 
-from water.outputs import WaterDisplayable
 
-
-class WaterConfiguration(BaseModel, WaterDisplayable):
+class WaterConfiguration(BaseModel):
     config_dir: str = Field(description='Directory into which water generates configuration files', default=None)
     default_output: str = Field(description='Default output format', default=None)
     default_platform: str = Field(description='Default platform', default=None)

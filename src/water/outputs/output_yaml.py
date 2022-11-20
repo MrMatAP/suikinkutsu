@@ -21,14 +21,19 @@
 #  SOFTWARE.
 
 import yaml
-from .output import Output, WaterDisplayable
+
+from . import OutputEntry
+from .output import Output
 
 
 class YAMLWaterOutput(Output):
     """
     YAML output
     """
-    name: str = 'yaml'
+    name = 'yaml'
+
+    def print(self, entry: OutputEntry) -> None:
+        print(yaml.safe_dump(entry.__dict__()))
 
     def exception(self, ex: Exception):
         ex_dict = self._exception_dict(ex)
@@ -42,20 +47,3 @@ class YAMLWaterOutput(Output):
 
     def error(self, msg: str):
         print(yaml.safe_dump({'ERROR': msg}))
-
-    def displayable(self, displayable: WaterDisplayable):
-        print('YAML')
-
-    def config_show(self, runtime):
-        config_dict = self._config_dict(runtime)
-        print(yaml.safe_dump(config_dict))
-
-    def platform_list(self, runtime):
-        platforms = self._platform_list(runtime)
-        print(yaml.safe_dump(platforms))
-
-    def cook_show(self, runtime):
-        pass
-
-    def blueprint_list(self, runtime):
-        pass

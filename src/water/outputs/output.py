@@ -21,32 +21,72 @@
 #  SOFTWARE.
 
 import abc
+import dataclasses
+import typing
+import enum
 from collections import OrderedDict
 
 
-class WaterDisplayable(abc.ABC):
+class OutputSeverity(enum.Enum):
+    DEBUG = "DEBUG"
+    INFO = "INFO"
+    WARNING = "WARNING"
+    ERROR = "ERROR"
 
-    @abc.abstractmethod
-    def display_dict(self) -> OrderedDict:
+    def __str__(self):
+        return self.value
+
+    def __repr__(self):
+        return f'OutputSeverity.{self.value}'
+
+
+@dataclasses.dataclass
+class OutputEntry:
+    """
+    A unit of output, allowing us to abstract away the method on how we output
+    """
+    msg: typing.Union[str, typing.List]
+    code: typing.Optional[int] = 200
+    title: typing.Optional[str] = None
+    columns: typing.Optional[typing.List] = None
+    severity: typing.Optional[OutputSeverity] = OutputSeverity.INFO
+
+    def __dict__(self) -> typing.Dict:
         """
-        Return an ordered dictionary used for displaying the datastructure implementing this method
-        Returns: An ordered dictionary
+        Produce a dict from the content of this OutputEntry.
+
+        This is a requirement for this class to be serializable as JSON and YAML. What is non-obvious is the generic
+        method to make this work for classes. __dict__ itself is not one of the standard dunderscore methods in Python.
+        There is mention of __iter__ and __next__ to implement standard JSON/YAML serialisability but I couldn't get
+        that to work. It would be nice if we could, because it does look quite ugly to call __dict__() explicitly.
+        Returns:
+            a dictionary
         """
-        pass
+        d = dict(msg=self.msg, code=self.code, severity=str(self.severity))
+        d['title'] = self.title or None
+        d['columns'] = self.columns or []
+        return d
 
 
 class Output(abc.ABC):
     """
     Abstract base class for output
     """
-    name: str = 'BasePlatform'
 
-    def __init__(self, runtime: 'Runtime'):
-        self._runtime = runtime
+    name = 'abstract'
 
-    @property
-    def runtime(self):
-        return self._runtime
+    # TODO: We accept, but do not use the runtime since all extensions are initialised the same way
+    def __init__(self, runtime = None) -> None:
+        super().__init__()
+
+    @abc.abstractmethod
+    def print(self, entry: OutputEntry) -> None:
+        """
+        Display a log entry in the chosen output format
+        Args:
+            entry: An output entry
+        """
+        pass
 
     @abc.abstractmethod
     def exception(self, ex: Exception) -> None:
@@ -82,34 +122,6 @@ class Output(abc.ABC):
         Args:
             msg: The error message to display
         """
-        pass
-
-    @abc.abstractmethod
-    def displayable(self, displayable: WaterDisplayable):
-        """
-        Display a displayable
-        Args:
-            displayable: The displayable to display
-        """
-        pass
-
-    @abc.abstractmethod
-    def config_show(self, runtime):
-        pass
-
-    @abc.abstractmethod
-    def platform_list(self, runtime):
-        pass
-
-    @abc.abstractmethod
-    def cook_show(self, runtime):
-        pass
-
-    @abc.abstractmethod
-    def blueprint_list(self, runtime):
-        pass
-
-    def instance_list(self, runtime):
         pass
 
     @staticmethod
