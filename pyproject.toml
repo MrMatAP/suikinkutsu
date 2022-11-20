@@ -40,7 +40,7 @@ version = { attr = "ci.version" }
 
 [tool.setuptools.packages.find]
 where = ["src"]
-include = ["water"]
+include = ["water*"]
 namespaces = false
 
 [project.scripts]
