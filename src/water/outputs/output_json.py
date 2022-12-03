@@ -33,7 +33,14 @@ class JSONWaterOutput(Output):
     name = 'json'
 
     def print(self, entry: OutputEntry) -> None:
-        print(json.dumps(entry.__dict__()))
+        if type(entry.msg) == str:
+            print(json.dumps(entry.__dict__()))
+            return
+
+        d = entry.__dict__()
+        d['msg'] = dict(zip(entry.columns, entry.msg))
+        del(d['columns'])
+        print(json.dumps(d))
 
     def exception(self, ex: Exception) -> None:
         ex_dict = self._exception_dict(ex)

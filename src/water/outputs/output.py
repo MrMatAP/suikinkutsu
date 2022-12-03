@@ -24,7 +24,6 @@ import abc
 import dataclasses
 import typing
 import enum
-from collections import OrderedDict
 
 
 class OutputSeverity(enum.Enum):
@@ -45,7 +44,8 @@ class OutputEntry:
     """
     A unit of output, allowing us to abstract away the method on how we output
     """
-    msg: typing.Union[str, typing.Dict[str, typing.List]]
+    msg: typing.Union[str, typing.List[typing.List[str]]]
+    columns: typing.Optional[typing.List[str]] = dataclasses.field(default_factory=list)
     code: typing.Optional[int] = 200
     title: typing.Optional[str] = None
     severity: typing.Optional[OutputSeverity] = OutputSeverity.INFO
@@ -61,8 +61,7 @@ class OutputEntry:
         Returns:
             a dictionary
         """
-        d = dict(msg=self.msg, code=self.code, severity=str(self.severity))
-        d['title'] = self.title or None
+        d = dict(msg=self.msg, code=self.code, severity=str(self.severity), title=self.title, columns=self.columns)
         return d
 
 

@@ -33,7 +33,14 @@ class YAMLWaterOutput(Output):
     name = 'yaml'
 
     def print(self, entry: OutputEntry) -> None:
-        print(yaml.safe_dump(entry.__dict__()))
+        if type(entry.msg) == str:
+            print(yaml.safe_dump(entry.__dict__()))
+            return
+
+        d = entry.__dict__()
+        d['msg'] = dict(zip(entry.columns, entry.msg))
+        del(d['columns'])
+        print(yaml.safe_dump(d))
 
     def exception(self, ex: Exception):
         ex_dict = self._exception_dict(ex)

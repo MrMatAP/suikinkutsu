@@ -23,7 +23,6 @@
 import pytest
 import json
 import yaml
-import sys
 from water.outputs import OutputSeverity, OutputEntry, HumanWaterOutput, JSONWaterOutput, YAMLWaterOutput
 
 
@@ -41,17 +40,19 @@ def test_human_output_strings(severity: OutputSeverity, capsys):
 @pytest.mark.parametrize('severity', list(OutputSeverity))
 def test_human_output_obj(severity: OutputSeverity, capsys):
     output = HumanWaterOutput()
-    entry = OutputEntry(msg=dict(row1=['one', 'two'], row2=['four', 'five']),
+    entry = OutputEntry(msg=[['one', 'two'], ['four', 'five']],
+                        columns=['col1', 'col2'],
                         title='Test',
                         severity=severity,
                         code=201)
     output.print(entry)
     captured = capsys.readouterr()
     assert f'[{entry.severity.value}] {entry.title} - {entry.code}' in captured.out
-    for col in entry.msg.keys():
+    for col in entry.columns:
         assert col in captured.out, 'Output contains desired column'
-        for row in entry.msg.get(col):
-            assert row in captured.out, 'Output contains desired cell'
+    for row in entry.msg:
+        for cell in row:
+            assert cell in captured.out, 'Output contains desired cell'
     assert captured.err == '', 'No stderr output is received'
 
 
@@ -73,7 +74,8 @@ def test_json_output_strings(severity: OutputSeverity, capsys):
 @pytest.mark.parametrize('severity', list(OutputSeverity))
 def test_json_output_obj(severity: OutputSeverity, capsys):
     output = JSONWaterOutput()
-    entry = OutputEntry(msg=dict(row1=['one', 'two'], row2=['four', 'five']),
+    entry = OutputEntry(msg=[['one', 'two'], ['four', 'five']],
+                        columns=['col1', 'col2'],
                         title='Test',
                         severity=severity,
                         code=201)
@@ -83,7 +85,7 @@ def test_json_output_obj(severity: OutputSeverity, capsys):
     assert json_out['severity'] == entry.severity.value
     assert json_out['title'] == entry.title
     assert json_out['code'] == entry.code
-    assert json_out['msg'] == entry.msg
+    assert json_out['msg'] == dict(zip(entry.columns, entry.msg))
     with pytest.raises(json.decoder.JSONDecodeError):
         json_err = json.loads(captured.err)
 
@@ -105,7 +107,8 @@ def test_yaml_output_strings(severity: OutputSeverity, capsys):
 @pytest.mark.parametrize('severity', list(OutputSeverity))
 def test_yaml_output_obj(severity: OutputSeverity, capsys):
     output = JSONWaterOutput()
-    entry = OutputEntry(msg=dict(row1=['one', 'two'], row2=['four', 'five']),
+    entry = OutputEntry(msg=[['one', 'two'], ['four', 'five']],
+                        columns=['col1', 'col2'],
                         title='Test',
                         severity=severity,
                         code=201)
@@ -115,4 +118,4 @@ def test_yaml_output_obj(severity: OutputSeverity, capsys):
     assert yaml_out['severity'] == entry.severity.value
     assert yaml_out['title'] == entry.title
     assert yaml_out['code'] == entry.code
-    assert yaml_out['msg'] == entry.msg
+    assert yaml_out['msg'] == dict(zip(entry.columns, entry.msg))
