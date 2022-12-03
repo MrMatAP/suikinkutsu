@@ -45,10 +45,9 @@ class OutputEntry:
     """
     A unit of output, allowing us to abstract away the method on how we output
     """
-    msg: typing.Union[str, typing.List]
+    msg: typing.Union[str, typing.Dict[str, typing.List]]
     code: typing.Optional[int] = 200
     title: typing.Optional[str] = None
-    columns: typing.Optional[typing.List] = None
     severity: typing.Optional[OutputSeverity] = OutputSeverity.INFO
 
     def __dict__(self) -> typing.Dict:
@@ -64,7 +63,6 @@ class OutputEntry:
         """
         d = dict(msg=self.msg, code=self.code, severity=str(self.severity))
         d['title'] = self.title or None
-        d['columns'] = self.columns or []
         return d
 
 

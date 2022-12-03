@@ -98,6 +98,10 @@ require more effort to set an environment variable than to override it for a par
 
 ## How to hack on this
 
+* If you get encoding errors on Windows while testing the outputs in PyCharm but the tests succeed in the normal 
+  Terminal console then check what the default encoding is for the PyCharm console. Chances are that it's not set to 
+  UTF-8.
+
 ### How to build this
 
 This project uses the [PEP517 build method](https://peps.python.org/pep-0517/). But it also uses a method for 

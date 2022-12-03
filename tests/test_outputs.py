@@ -23,6 +23,7 @@
 import pytest
 import json
 import yaml
+import sys
 from water.outputs import OutputSeverity, OutputEntry, HumanWaterOutput, JSONWaterOutput, YAMLWaterOutput
 
 
@@ -45,9 +46,12 @@ def test_human_output_obj(severity: OutputSeverity, capsys):
                         severity=severity,
                         code=201)
     output.print(entry)
-
     captured = capsys.readouterr()
-    # TODO: Verify output
+    assert f'[{entry.severity.value}] {entry.title} - {entry.code}' in captured.out
+    for col in entry.msg.keys():
+        assert col in captured.out, 'Output contains desired column'
+        for row in entry.msg.get(col):
+            assert row in captured.out, 'Output contains desired cell'
     assert captured.err == '', 'No stderr output is received'
 
 
@@ -67,6 +71,24 @@ def test_json_output_strings(severity: OutputSeverity, capsys):
 
 
 @pytest.mark.parametrize('severity', list(OutputSeverity))
+def test_json_output_obj(severity: OutputSeverity, capsys):
+    output = JSONWaterOutput()
+    entry = OutputEntry(msg=dict(row1=['one', 'two'], row2=['four', 'five']),
+                        title='Test',
+                        severity=severity,
+                        code=201)
+    output.print(entry)
+    captured = capsys.readouterr()
+    json_out = json.loads(captured.out)
+    assert json_out['severity'] == entry.severity.value
+    assert json_out['title'] == entry.title
+    assert json_out['code'] == entry.code
+    assert json_out['msg'] == entry.msg
+    with pytest.raises(json.decoder.JSONDecodeError):
+        json_err = json.loads(captured.err)
+
+
+@pytest.mark.parametrize('severity', list(OutputSeverity))
 def test_yaml_output_strings(severity: OutputSeverity, capsys):
     output = YAMLWaterOutput()
     entry = OutputEntry(msg=f'Message at severity {severity.value}', severity=severity, code=201)
@@ -74,7 +96,23 @@ def test_yaml_output_strings(severity: OutputSeverity, capsys):
 
     captured = capsys.readouterr()
     yaml_out = yaml.safe_load(captured.out)
-    assert yaml_out.get('code') == entry.code, 'The rendered code matches the OutputEntry'
-    assert yaml_out.get('msg') == entry.msg, 'The rendered msg matches the OutputEntry'
-    assert yaml_out.get('severity') == entry.severity.value, 'The rendered severity matches the OutputEntry'
+    assert yaml_out['code'] == entry.code, 'The rendered code matches the OutputEntry'
+    assert yaml_out['msg'] == entry.msg, 'The rendered msg matches the OutputEntry'
+    assert yaml_out['severity'] == entry.severity.value, 'The rendered severity matches the OutputEntry'
     assert captured.err == '', 'There is no output on stderr'
+
+
+@pytest.mark.parametrize('severity', list(OutputSeverity))
+def test_yaml_output_obj(severity: OutputSeverity, capsys):
+    output = JSONWaterOutput()
+    entry = OutputEntry(msg=dict(row1=['one', 'two'], row2=['four', 'five']),
+                        title='Test',
+                        severity=severity,
+                        code=201)
+    output.print(entry)
+    captured = capsys.readouterr()
+    yaml_out = yaml.safe_load(captured.out)
+    assert yaml_out['severity'] == entry.severity.value
+    assert yaml_out['title'] == entry.title
+    assert yaml_out['code'] == entry.code
+    assert yaml_out['msg'] == entry.msg

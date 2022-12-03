@@ -45,11 +45,15 @@ class HumanWaterOutput(Output):
             self._console.print(HumanWaterOutput._severity(entry.severity, f'* [{entry.code}] {entry.msg}'))
             return
 
-        table = Table(title=f'[{entry.code}] {entry.title}' or None,
+        title = f'[{entry.severity.value}] {entry.title} - {entry.code}'
+        table = Table(title=title,
+                      show_edge=True,
+                      show_lines=True,
+                      min_width=len(title),
                       box=ROUNDED)
-        for col in (entry.columns or []):
+        for col in entry.msg.keys():
             table.add_column(col)
-        for row in (entry.msg or []):
+        for row in entry.msg.values():
             table.add_row(*row)
         self._console.print(table)
 
