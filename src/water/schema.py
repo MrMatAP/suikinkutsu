@@ -20,18 +20,8 @@
 #  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 #  SOFTWARE.
 
-from collections import OrderedDict
 from typing import Optional, Dict, List
 from pydantic import BaseModel, Field
-
-
-class WaterConfiguration(BaseModel):
-    config_dir: str = Field(description='Directory into which water generates configuration files', default=None)
-    default_output: str = Field(description='Default output format', default=None)
-    default_platform: str = Field(description='Default platform', default=None)
-
-    def display_dict(self) -> OrderedDict:
-        return OrderedDict(self.dict())
 
 
 class BlueprintSchema(BaseModel):
