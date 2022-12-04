@@ -51,11 +51,9 @@ water = "water.cli:main"
 # in addopts
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-#addopts = --cov=water --cov-report=term --cov-report=xml:build/coverage.xml --junit-xml=build/junit.xml
-addopts = "--capture=tee-sys"
+#addopts = "--cov=water --cov-report=term --cov-report=xml:build/coverage.xml --junit-xml=build/junit.xml --capture=tee-sys"
 junit_family = "xunit2"
 log_cli = 1
 log_cli_level = "INFO"
 log_cli_format = "%(asctime)s [%(levelname)8s] %(message)s (%(filename)s:%(lineno)s)"
 log_cli_date_format = "%Y-%m-%d %H:%M:%S"
-capture = "tee-sys"
