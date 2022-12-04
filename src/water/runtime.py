@@ -22,11 +22,12 @@
 
 import os
 import pathlib
-import enum
+
 import json
 from typing import List, Dict, Optional, Any
 from argparse import ArgumentParser, Namespace
 
+from .config import ConfigurableItem, Source
 from water.exceptions import MurkyWaterException
 from water.outputs import Output
 from water.blueprints import Blueprint, BlueprintInstance, BlueprintInstanceList
@@ -35,60 +36,6 @@ from water.schema import WaterConfiguration
 from water.constants import DEFAULT_CONFIG_FILE, ENV_CONFIG_FILE, DEFAULT_CONFIG_DIR, ENV_CONFIG_DIR, \
     DEFAULT_OUTPUT_CLASS, ENV_OUTPUT_CLASS, DEFAULT_PLATFORM_CLASS, ENV_PLATFORM_CLASS, DEFAULT_RECIPE_FILE, \
     ENV_RECIPE_FILE, ENV_SECRETS_FILE
-
-
-@enum.unique
-class Source(enum.Enum):
-    """
-    Sources from which configurable items can be configured from
-    """
-    DEFAULT = 'Default Value'
-    CONFIGURATION = 'Configuration File'
-    ENVIRONMENT = 'Environment Variable'
-    CLI = 'CLI Parameter'
-
-    def __str__(self):
-        return self.value
-
-    def __repr__(self):
-        return f'Source.{self.name}'
-
-
-class ConfigurableItem:
-    """
-    A configurable item with a name, value and source from where it was configured
-    """
-
-    def __init__(self, name: str, source: Source, value: Any):
-        self._name = name
-        self._source = source
-        self._value = value
-
-    @property
-    def name(self) -> str:
-        return self._name
-
-    @property
-    def source(self) -> Source:
-        return self._source
-
-    @source.setter
-    def source(self, value: Source):
-        self._source = value
-
-    @property
-    def value(self):
-        return self._value
-
-    @value.setter
-    def value(self, value: Any):
-        self._value = value
-
-    def __repr__(self):
-        return f'ConfigurableItem({self._name}, {self._source}, {self._value})'
-
-    def __str__(self):
-        return str(self._value)
 
 
 class Runtime:
@@ -135,16 +82,6 @@ class Runtime:
         self._secrets = {}
 
     def cli_prepare(self, parser: ArgumentParser):
-        parser.add_argument('-c',
-                            dest='override_config_file',
-                            default=str(self.config_file),
-                            required=False,
-                            help='Override the water configuration file for this invocation')
-        parser.add_argument('-d',
-                            dest='override_config_dir',
-                            default=str(self.config_dir),
-                            required=False,
-                            help='Override the directory into which configuration is generated for this invocation')
         parser.add_argument('-o', '--output',
                             dest='override_output',
                             default=str(self.output_class),
@@ -157,11 +94,7 @@ class Runtime:
                             choices=[name for name in self.platforms.keys()],
                             required=False,
                             help='Override the default platform for this invocation')
-        parser.add_argument('-s', '--secrets',
-                            dest='override_secrets_file',
-                            default=str(self.secrets_file),
-                            required=False,
-                            help='Override the secrets file for this invocation')
+
 
     def cli_assess(self, args: Namespace):
         if args.override_config_file and args.override_config_file != DEFAULT_CONFIG_FILE:

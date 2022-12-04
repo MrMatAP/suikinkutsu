@@ -19,3 +19,33 @@
 #  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 #  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 #  SOFTWARE.
+
+import argparse
+import os
+
+import pytest
+import water.constants
+
+config_overrides = [(water.constants.ENV_CONFIG_FILE, water.constants.CLI_CONFIG_FILE, 'config_file'),
+                    (water.constants.ENV_CONFIG_DIR, water.constants.CLI_CONFIG_DIR, 'config_dir'),
+                    (water.constants.ENV_RECIPE_FILE, water.constants.CLI_RECIPE_FILE, 'recipe_file'),
+                    (water.constants.ENV_SECRETS_FILE, water.constants.CLI_SECRETS_FILE, 'secrets_file')]
+config_override_ids = [f'override-{entry[2]}' for entry in config_overrides]
+
+
+@pytest.fixture
+def cli_arg_namespace() -> argparse.Namespace:
+    cli_args = {arg[1]: None for arg in config_overrides}
+    return argparse.Namespace(**cli_args)
+
+
+@pytest.fixture
+def config_env(tmp_path):
+    env_vars = [entry[0] for entry in config_overrides]
+    for env_var in env_vars:
+        if env_var in os.environ:
+            del os.environ[env_var]
+    yield tmp_path
+    for env_var in env_vars:
+        if env_var in os.environ:
+            del os.environ[env_var]

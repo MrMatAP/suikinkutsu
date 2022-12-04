@@ -24,14 +24,18 @@ import os
 
 DEFAULT_CONFIG_FILE = os.path.expanduser(os.path.join('~', '.water'))
 ENV_CONFIG_FILE = 'WATER_CONFIG_FILE'
+CLI_CONFIG_FILE = 'override_config_file'
 DEFAULT_CONFIG_DIR = os.path.expanduser(os.path.join('~', 'etc'))
 ENV_CONFIG_DIR = 'WATER_CONFIG_DIR'
+CLI_CONFIG_DIR = 'override_config_dir'
 DEFAULT_OUTPUT_CLASS = 'human'
 ENV_OUTPUT_CLASS = 'WATER_DEFAULT_OUTPUT'
 DEFAULT_PLATFORM_CLASS = 'nerdctl'
 ENV_PLATFORM_CLASS = 'WATER_DEFAULT_PLATFORM'
 DEFAULT_RECIPE_FILE = os.path.join(os.path.abspath(os.path.curdir), 'Recipe')
 ENV_RECIPE_FILE = 'WATER_RECIPE'
+CLI_RECIPE_FILE = 'override_recipe_file'
 ENV_SECRETS_FILE = 'WATER_SECRETS_FILE'
+CLI_SECRETS_FILE = 'override_secrets_file'
 LABEL_BLUEPRINT: str = 'org.mrmat.water.blueprint'
 LABEL_CREATED_BY: str = 'org.mrmat.created-by'
