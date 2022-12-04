@@ -24,48 +24,48 @@ import os
 import pathlib
 import json
 
-import water.constants
-import water.runtime
+# import water.constants
+# import water.runtime
 
-
-def test_runtime_defaults() -> None:
-    """
-    Test the defaults
-    """
-    r = water.runtime.Runtime()
-    assert r.config_file == pathlib.Path(water.constants.DEFAULT_CONFIG_FILE)
-    assert r.config_file_source == water.runtime.Source.DEFAULT
-    assert r.config_dir == pathlib.Path(water.constants.DEFAULT_CONFIG_DIR)
-    assert r.config_dir_source == water.runtime.Source.DEFAULT
-    assert r.output.__class__.__name__ == water.constants.DEFAULT_OUTPUT_CLASS
-    assert r.output_source == water.runtime.Source.DEFAULT
-    assert r.recipe_file == pathlib.Path(water.constants.DEFAULT_RECIPE_FILE)
-    assert r.recipe_file_source == water.runtime.Source.DEFAULT
-    assert len(r.available_blueprints) > 0
-    assert len(r.available_platforms) > 0
-
-
-def test_runtime_with_configfile(tmp_path) -> None:
-    """
-    Test whether we can override the configuration file with an environment variable
-    Args:
-        tmp_path: A temporary directory
-    """
-    config_dir = tmp_path / "etc"
-    config_dir.mkdir()
-    config_file = tmp_path / ".water"
-    config_file.write_text(json.dumps({
-        'config_dir': str(config_dir)
-    }))
-    os.environ[water.constants.ENV_CONFIG_FILE] = str(config_file)
-
-    r = water.runtime.Runtime()
-    assert r.config_file == config_file
-    assert r.config_file_source == water.runtime.Source.ENVIRONMENT
-    assert r.config_dir == pathlib.Path(config_dir)
-    assert r.config_dir_source == water.runtime.Source.CONFIGURATION
-    assert r.recipe_file == pathlib.Path(water.constants.DEFAULT_RECIPE_FILE)
-    assert r.recipe_file_source == water.runtime.Source.DEFAULT
-    assert len(r.available_blueprints) > 0
-    assert len(r.available_platforms) > 0
-    del(os.environ[water.constants.ENV_CONFIG_FILE])
+#
+# def test_runtime_defaults() -> None:
+#     """
+#     Test the defaults
+#     """
+#     r = water.runtime.Runtime()
+#     assert r.config_file == pathlib.Path(water.constants.DEFAULT_CONFIG_FILE)
+#     assert r.config_file_source == water.runtime.Source.DEFAULT
+#     assert r.config_dir == pathlib.Path(water.constants.DEFAULT_CONFIG_DIR)
+#     assert r.config_dir_source == water.runtime.Source.DEFAULT
+#     assert r.output.__class__.__name__ == water.constants.DEFAULT_OUTPUT_CLASS
+#     assert r.output_source == water.runtime.Source.DEFAULT
+#     assert r.recipe_file == pathlib.Path(water.constants.DEFAULT_RECIPE_FILE)
+#     assert r.recipe_file_source == water.runtime.Source.DEFAULT
+#     assert len(r.available_blueprints) > 0
+#     assert len(r.available_platforms) > 0
+#
+#
+# def test_runtime_with_configfile(tmp_path) -> None:
+#     """
+#     Test whether we can override the configuration file with an environment variable
+#     Args:
+#         tmp_path: A temporary directory
+#     """
+#     config_dir = tmp_path / "etc"
+#     config_dir.mkdir()
+#     config_file = tmp_path / ".water"
+#     config_file.write_text(json.dumps({
+#         'config_dir': str(config_dir)
+#     }))
+#     os.environ[water.constants.ENV_CONFIG_FILE] = str(config_file)
+#
+#     r = water.runtime.Runtime()
+#     assert r.config_file == config_file
+#     assert r.config_file_source == water.runtime.Source.ENVIRONMENT
+#     assert r.config_dir == pathlib.Path(config_dir)
+#     assert r.config_dir_source == water.runtime.Source.CONFIGURATION
+#     assert r.recipe_file == pathlib.Path(water.constants.DEFAULT_RECIPE_FILE)
+#     assert r.recipe_file_source == water.runtime.Source.DEFAULT
+#     assert len(r.available_blueprints) > 0
+#     assert len(r.available_platforms) > 0
+#     del(os.environ[water.constants.ENV_CONFIG_FILE])
