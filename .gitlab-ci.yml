@@ -103,7 +103,7 @@ build-job:
     #- |
       # Testing
       # There is no testsuite at the moment
-      #pip install ${CI_PROJECT_DIR}/dist/water-*.whl
+      #pip install ${CI_PROJECT_DIR}/dist/suikinkutsu-*.whl
       #pytest --cov=mrmat_ca
   artifacts:
       paths:
@@ -129,7 +129,7 @@ release-job:
   stage: release
   image: registry.gitlab.com/gitlab-org/release-cli
   script:
-  - echo "INFO - Releasing water ${MRMAT_VERSION}"
+  - echo "INFO - Releasing suikinkutsu ${MRMAT_VERSION}"
   release:
     name: $MRMAT_VERSION
     description: "Release $MRMAT_VERSION"

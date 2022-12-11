@@ -22,9 +22,9 @@
 
 from typing import Dict, Type
 import yaml
-from water.exceptions import MurkyWaterException
-from water.blueprints import Blueprint
-from water.schema import RecipeSchema
+from suikinkutsu.exceptions import MurkyWaterException
+from suikinkutsu.blueprints import Blueprint
+from suikinkutsu.schema import RecipeSchema
 
 
 class Recipe:

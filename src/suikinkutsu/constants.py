@@ -22,7 +22,7 @@
 
 import os
 
-DEFAULT_CONFIG_FILE = os.path.expanduser(os.path.join('~', '.water'))
+DEFAULT_CONFIG_FILE = os.path.expanduser(os.path.join('~', '.suikinkutsu'))
 ENV_CONFIG_FILE = 'WATER_CONFIG_FILE'
 CLI_CONFIG_FILE = 'override_config_file'
 
@@ -45,5 +45,5 @@ CLI_RECIPE_FILE = 'override_recipe_file'
 ENV_SECRETS_FILE = 'WATER_SECRETS_FILE'
 CLI_SECRETS_FILE = 'override_secrets_file'
 
-LABEL_BLUEPRINT: str = 'org.mrmat.water.blueprint'
+LABEL_BLUEPRINT: str = 'org.mrmat.suikinkutsu.blueprint'
 LABEL_CREATED_BY: str = 'org.mrmat.created-by'

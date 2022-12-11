@@ -25,8 +25,8 @@ import abc
 from collections import OrderedDict
 from typing import Optional, List
 
-from water.schema import BlueprintSchema
-from water.constants import LABEL_BLUEPRINT
+from suikinkutsu.schema import BlueprintSchema
+from suikinkutsu.constants import LABEL_BLUEPRINT
 
 
 class Blueprint(abc.ABC):

@@ -27,13 +27,13 @@ import json
 from typing import List, Dict, Optional, Any, Type
 from argparse import ArgumentParser, Namespace
 
-import water.constants
+import suikinkutsu.constants
 from .config import ConfigurableItem, Source, WaterConfig
-from water.exceptions import MurkyWaterException
-from water.outputs import Output, HumanWaterOutput
-from water.blueprints import Blueprint, BlueprintInstance, BlueprintInstanceList
-from water.platforms import WaterPlatform
-from water.config import WaterConfig
+from suikinkutsu.exceptions import MurkyWaterException
+from suikinkutsu.outputs import Output, HumanWaterOutput
+from suikinkutsu.blueprints import Blueprint, BlueprintInstance, BlueprintInstanceList
+from suikinkutsu.platforms import WaterPlatform
+from suikinkutsu.config import WaterConfig
 
 
 class Runtime:

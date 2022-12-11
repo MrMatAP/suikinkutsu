@@ -25,7 +25,7 @@ from .exceptions import MurkyWaterException
 from .water_extension import WaterExtension
 
 try:
-    __version__ = importlib.metadata.version('water')
+    __version__ = importlib.metadata.version('suikinkutsu')
 except importlib.metadata.PackageNotFoundError:
     # You have not yet installed this as a package, likely because you're hacking on it in some IDE
     __version__ = '0.0.0.dev0'

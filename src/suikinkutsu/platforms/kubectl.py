@@ -24,9 +24,9 @@ from typing import Optional, Dict, List
 import json
 import shutil
 
-from water import MurkyWaterException
+from suikinkutsu import MurkyWaterException
 from .platform import WaterPlatform
-from water.blueprints import BlueprintInstance, Blueprint
+from suikinkutsu.blueprints import BlueprintInstance, Blueprint
 
 
 class Kubectl(WaterPlatform):

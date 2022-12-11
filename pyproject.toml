@@ -9,9 +9,9 @@ requires = [
 build-backend = 'setuptools.build_meta'
 
 [project]
-name = "water"
+name = "suikinkutsu"
 description = "A tool for developer efficiency when they are on the road, using container-based infrastructure, because we all cook with water."
-urls = { "Sources" = "https://gitlab.com/mrmatorg/water" }
+urls = { "Sources" = "https://github.com/MrMatAP/suikinkutsu" }
 keywords = ["utility", "development"]
 readme = "README.md"
 license = { text = "MIT" }
@@ -40,18 +40,18 @@ version = { attr = "ci.version" }
 
 [tool.setuptools.packages.find]
 where = ["src"]
-include = ["water*"]
+include = ["suikinkutsu*"]
 namespaces = false
 
 [project.scripts]
-water = "water.cli:main"
+water = "suikinkutsu.cli:main"
 
 #
 # If you are debugging your tests using PyCharm then comment out the coverage options
 # in addopts
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-#addopts = "--cov=water --cov-report=term --cov-report=xml:build/coverage.xml --junit-xml=build/junit.xml --capture=tee-sys"
+addopts = "--cov=suikinkutsu --cov-report=term --cov-report=xml:build/coverage.xml --junit-xml=build/junit.xml --capture=tee-sys"
 junit_family = "xunit2"
 log_cli = 1
 log_cli_level = "INFO"

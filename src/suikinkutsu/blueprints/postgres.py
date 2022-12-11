@@ -25,9 +25,9 @@ import secrets
 import psycopg2
 from psycopg2 import sql
 
-from water.schema import BlueprintSchema
-from water.exceptions import MurkyWaterException
-from water.constants import LABEL_BLUEPRINT, LABEL_CREATED_BY
+from suikinkutsu.schema import BlueprintSchema
+from suikinkutsu.exceptions import MurkyWaterException
+from suikinkutsu.constants import LABEL_BLUEPRINT, LABEL_CREATED_BY
 from .blueprint import Blueprint, BlueprintInstance
 
 
@@ -48,7 +48,7 @@ class PostgreSQL(Blueprint):
         ports={'5432': '5432'},
         labels={
             LABEL_BLUEPRINT: 'postgres',
-            LABEL_CREATED_BY: 'water'
+            LABEL_CREATED_BY: 'suikinkutsu'
         },
         depends_on=[]
     )

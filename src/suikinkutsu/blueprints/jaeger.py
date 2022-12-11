@@ -21,9 +21,9 @@
 #  SOFTWARE.
 
 from argparse import Namespace
-from water.schema import BlueprintSchema
-from water.constants import LABEL_BLUEPRINT, LABEL_CREATED_BY
-from water.blueprints.blueprint import Blueprint, BlueprintInstance
+from suikinkutsu.schema import BlueprintSchema
+from suikinkutsu.constants import LABEL_BLUEPRINT, LABEL_CREATED_BY
+from suikinkutsu.blueprints.blueprint import Blueprint, BlueprintInstance
 
 
 class Jaeger(Blueprint):
@@ -55,7 +55,7 @@ class Jaeger(Blueprint):
         },
         labels={
             LABEL_BLUEPRINT: 'jaeger',
-            LABEL_CREATED_BY: 'water'
+            LABEL_CREATED_BY: 'suikinkutsu'
         },
         depends_on=[]
     )

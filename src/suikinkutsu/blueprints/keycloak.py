@@ -23,9 +23,9 @@
 from argparse import Namespace
 import secrets
 
-from water.schema import BlueprintSchema
-from water.blueprints.blueprint import Blueprint, BlueprintInstance
-from water.constants import LABEL_BLUEPRINT, LABEL_CREATED_BY
+from suikinkutsu.schema import BlueprintSchema
+from suikinkutsu.blueprints.blueprint import Blueprint, BlueprintInstance
+from suikinkutsu.constants import LABEL_BLUEPRINT, LABEL_CREATED_BY
 
 
 class Keycloak(Blueprint):
@@ -50,7 +50,7 @@ class Keycloak(Blueprint):
         ports={'127.0.0.1:8080': '8080'},
         labels={
             LABEL_BLUEPRINT: 'keycloak',
-            LABEL_CREATED_BY: 'water'
+            LABEL_CREATED_BY: 'suikinkutsu'
         },
         depends_on=[]
     )

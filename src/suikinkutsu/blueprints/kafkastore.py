@@ -22,8 +22,8 @@
 
 from argparse import Namespace
 
-from water.schema import BlueprintSchema
-from water.constants import LABEL_BLUEPRINT, LABEL_CREATED_BY
+from suikinkutsu.schema import BlueprintSchema
+from suikinkutsu.constants import LABEL_BLUEPRINT, LABEL_CREATED_BY
 from .blueprint import Blueprint, BlueprintInstance
 
 
@@ -46,7 +46,7 @@ class KafkaStore(Blueprint):
         ports={'8081': '8081'},
         labels={
             LABEL_BLUEPRINT: 'kafkastore',
-            LABEL_CREATED_BY: 'water'
+            LABEL_CREATED_BY: 'suikinkutsu'
         },
         depends_on=['kafka']
     )

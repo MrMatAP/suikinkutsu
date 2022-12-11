@@ -46,7 +46,7 @@ repo becomes the primary source of package name resolution. This is because the 
 called water which will be found first otherwise.
 
 ```shell
-$ pip install water --index-url https://__token__:<your_personal_token>@gitlab.com/api/v4/projects/36380957/packages/pypi/simple
+$ pip install suikinkutsu --index-url https://__token__:<your_personal_token>@gitlab.com/api/v4/projects/36380957/packages/pypi/simple
 ```
 
 ### If you don't have a GitLab personal access token

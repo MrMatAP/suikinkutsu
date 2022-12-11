@@ -28,12 +28,12 @@ import enum
 import collections
 import pydantic
 
-import water.constants
-from water.outputs import OutputEntry, HumanWaterOutput
+import suikinkutsu.constants
+from suikinkutsu.outputs import OutputEntry, HumanWaterOutput
 
 
 class WaterConfiguration(pydantic.BaseModel):
-    config_dir: str = pydantic.Field(description='Directory into which water generates configuration files',
+    config_dir: str = pydantic.Field(description='Directory into which suikinkutsu generates configuration files',
                                      default=None)
     output: str = pydantic.Field(description='Default output format', default=None)
     platform: str = pydantic.Field(description='Default platform', default=None)
@@ -145,71 +145,71 @@ class WaterConfig(object):
         self._config_file = ConfigurableItem(
             name='config_file',
             source=Source.DEFAULT,
-            env_override=water.constants.ENV_CONFIG_FILE,
-            default_value=water.constants.DEFAULT_CONFIG_FILE)
+            env_override=suikinkutsu.constants.ENV_CONFIG_FILE,
+            default_value=suikinkutsu.constants.DEFAULT_CONFIG_FILE)
         self._config_dir = ConfigurableItem(
             name='config_dir',
             source=Source.DEFAULT,
-            env_override=water.constants.ENV_CONFIG_DIR,
-            default_value=water.constants.DEFAULT_CONFIG_DIR)
+            env_override=suikinkutsu.constants.ENV_CONFIG_DIR,
+            default_value=suikinkutsu.constants.DEFAULT_CONFIG_DIR)
         self._recipe_file = ConfigurableItem(
             name='recipe_file',
             source=Source.DEFAULT,
-            env_override=water.constants.ENV_RECIPE_FILE,
-            default_value=water.constants.DEFAULT_RECIPE_FILE)
+            env_override=suikinkutsu.constants.ENV_RECIPE_FILE,
+            default_value=suikinkutsu.constants.DEFAULT_RECIPE_FILE)
 
         config_dir_path = pathlib.Path(self._config_dir.value)
         recipe_file_path = pathlib.Path(self._recipe_file.value)
         self._secrets_file = ConfigurableItem(
             name='secrets_file',
             source=Source.DEFAULT,
-            env_override=water.constants.ENV_SECRETS_FILE,
+            env_override=suikinkutsu.constants.ENV_SECRETS_FILE,
             default_value=str(pathlib.Path(config_dir_path / f'{recipe_file_path.parent.name}.json')))
 
         self._output = ConfigurableItem(
             name='output',
             source=Source.DEFAULT,
-            env_override=water.constants.ENV_OUTPUT,
-            default_value=water.constants.DEFAULT_OUTPUT)
+            env_override=suikinkutsu.constants.ENV_OUTPUT,
+            default_value=suikinkutsu.constants.DEFAULT_OUTPUT)
 
         self._platform = ConfigurableItem(
             name='platform',
             source=Source.DEFAULT,
-            env_override=water.constants.ENV_PLATFORM,
-            default_value=water.constants.DEFAULT_PLATFORM)
+            env_override=suikinkutsu.constants.ENV_PLATFORM,
+            default_value=suikinkutsu.constants.DEFAULT_PLATFORM)
 
         if self._config_file.source == Source.ENVIRONMENT:
             self.config_load()
 
     def cli_prepare(self, parser, subparser):
         parser.add_argument('-c',
-                            dest=water.constants.CLI_CONFIG_FILE,
+                            dest=suikinkutsu.constants.CLI_CONFIG_FILE,
                             default=self.config_file.value,
                             required=False,
-                            help='Override the water configuration file for this invocation')
+                            help='Override the suikinkutsu configuration file for this invocation')
         parser.add_argument('-d',
-                            dest=water.constants.CLI_CONFIG_DIR,
+                            dest=suikinkutsu.constants.CLI_CONFIG_DIR,
                             default=self.config_dir.value,
                             required=False,
                             help='Override the directory into which configuration is generated for this invocation')
         parser.add_argument('-r',
-                            dest=water.constants.CLI_RECIPE_FILE,
+                            dest=suikinkutsu.constants.CLI_RECIPE_FILE,
                             default=self.recipe_file.value,
                             required=False,
                             help='Override the recipe file for this invocation')
         parser.add_argument('-s', '--secrets',
-                            dest=water.constants.CLI_SECRETS_FILE,
+                            dest=suikinkutsu.constants.CLI_SECRETS_FILE,
                             default=self.secrets_file.value,
                             required=False,
                             help='Override the secrets file for this invocation')
         parser.add_argument('-o', '--output',
-                            dest=water.constants.CLI_OUTPUT,
+                            dest=suikinkutsu.constants.CLI_OUTPUT,
                             default=self.output.value,
                             #choices=[name for name in self.outputs.keys()],
                             required=False,
                             help='Override the output style for this invocation')
         parser.add_argument('-p', '--platform',
-                            dest=water.constants.CLI_PLATFORM,
+                            dest=suikinkutsu.constants.CLI_PLATFORM,
                             default=self.platform.value,
                             #choices=[name for name in self.platforms.keys()],
                             required=False,
@@ -223,15 +223,15 @@ class WaterConfig(object):
         config_set_parser.add_argument('--config-dir',
                                        dest='set_config_dir',
                                        required=False,
-                                       help='Persist the directory in which water will generate configuration')
+                                       help='Persist the directory in which suikinkutsu will generate configuration')
         config_set_parser.add_argument('--output',
                                        dest='set_config_output',
                                        required=False,
-                                       help='Persist the preferred output style in the water configuration file')
+                                       help='Persist the preferred output style in the suikinkutsu configuration file')
         config_set_parser.add_argument('--platform',
                                        dest='set_config_platform',
                                        required=False,
-                                       help='Persist the preferred platform in the water configuration file')
+                                       help='Persist the preferred platform in the suikinkutsu configuration file')
         config_set_parser.set_defaults(cmd=self.config_set)
 
     def cli_assess(self, args: argparse.Namespace):

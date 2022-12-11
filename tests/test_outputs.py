@@ -23,7 +23,7 @@
 import pytest
 import json
 import yaml
-from water.outputs import OutputSeverity, OutputEntry, HumanWaterOutput, JSONWaterOutput, YAMLWaterOutput
+from suikinkutsu.outputs import OutputSeverity, OutputEntry, HumanWaterOutput, JSONWaterOutput, YAMLWaterOutput
 
 
 @pytest.mark.parametrize('severity', list(OutputSeverity))

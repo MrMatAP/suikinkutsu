@@ -24,10 +24,10 @@ import sys
 import os
 import argparse
 
-from water import __version__, MurkyWaterException
-from water.config import WaterConfig
-from water.runtime import Runtime
-from water.outputs import OutputEntry, OutputSeverity
+from suikinkutsu import __version__, MurkyWaterException
+from suikinkutsu.config import WaterConfig
+from suikinkutsu.runtime import Runtime
+from suikinkutsu.outputs import OutputEntry, OutputSeverity
 
 
 def platform_list(runtime: Runtime, args: argparse.Namespace) -> int:
@@ -65,11 +65,11 @@ def cook_up(runtime: Runtime, args: argparse.Namespace) -> int:
         return 0
         # with open(args.recipe, 'r', encoding='UTF-8') as r:
         #     raw_recipe = yaml.safe_load(r)
-        # parsed_recipe = water.models.RecipeSchema.parse_obj(raw_recipe)
+        # parsed_recipe = suikinkutsu.models.RecipeSchema.parse_obj(raw_recipe)
         # console.print(parsed_recipe)
         # for name, blueprint_model in parsed_recipe.blueprints.items():
         #     if blueprint_model.kind == 'postgres':
-        #         blueprint_model.merge_defaults(water.blueprints.postgres.PostgreSQL.defaults)
+        #         blueprint_model.merge_defaults(suikinkutsu.blueprints.postgres.PostgreSQL.defaults)
         # console.print(parsed_recipe)
     except Exception:
         # console.print_exception()

@@ -20,8 +20,8 @@
 #  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 #  SOFTWARE.
 
-from water.config import WaterConfig
-from water.runtime import Runtime
+from suikinkutsu.config import WaterConfig
+from suikinkutsu.runtime import Runtime
 
 
 def test_runtime_loads():

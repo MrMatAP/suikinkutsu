@@ -22,8 +22,8 @@
 
 from argparse import Namespace
 
-from water.schema import BlueprintSchema
-from water.constants import LABEL_BLUEPRINT, LABEL_CREATED_BY
+from suikinkutsu.schema import BlueprintSchema
+from suikinkutsu.constants import LABEL_BLUEPRINT, LABEL_CREATED_BY
 from .blueprint import Blueprint, BlueprintInstance
 
 
@@ -46,7 +46,7 @@ class Zookeeper(Blueprint):
         ports={'32181': '32181'},
         labels={
             LABEL_BLUEPRINT: 'zookeeper',
-            LABEL_CREATED_BY: 'water'
+            LABEL_CREATED_BY: 'suikinkutsu'
         },
         depends_on=[]
     )

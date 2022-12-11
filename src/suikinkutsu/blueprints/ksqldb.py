@@ -22,8 +22,8 @@
 
 from argparse import Namespace
 
-from water.schema import BlueprintSchema
-from water.constants import LABEL_BLUEPRINT, LABEL_CREATED_BY
+from suikinkutsu.schema import BlueprintSchema
+from suikinkutsu.constants import LABEL_BLUEPRINT, LABEL_CREATED_BY
 from .blueprint import Blueprint, BlueprintInstance
 
 
@@ -45,7 +45,7 @@ class KSQLDB(Blueprint):
         ports={'8088': '8088'},
         labels={
             LABEL_BLUEPRINT: 'ksqldb',
-            LABEL_CREATED_BY: 'water'
+            LABEL_CREATED_BY: 'suikinkutsu'
         },
         depends_on=['kafka']
     )

@@ -25,8 +25,8 @@ import json
 import shutil
 
 from .docker import Docker
-from water.blueprints import Blueprint, BlueprintInstance, BlueprintVolume
-from water.constants import LABEL_BLUEPRINT, LABEL_CREATED_BY
+from suikinkutsu.blueprints import Blueprint, BlueprintInstance, BlueprintVolume
+from suikinkutsu.constants import LABEL_BLUEPRINT, LABEL_CREATED_BY
 
 
 class Nerdctl(Docker):

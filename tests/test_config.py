@@ -26,8 +26,8 @@ import argparse
 import pytest
 
 import conftest
-import water.constants
-from water.config import WaterConfig, Source, ConfigurableItem
+import suikinkutsu.constants
+from suikinkutsu.config import WaterConfig, Source, ConfigurableItem
 
 
 def assert_configurable_item(item: ConfigurableItem, value: str, source: Source):
@@ -36,10 +36,10 @@ def assert_configurable_item(item: ConfigurableItem, value: str, source: Source)
 
 
 def test_default_config(config_env):
-    config = water.config.WaterConfig()
-    assert_configurable_item(config.config_file, water.constants.DEFAULT_CONFIG_FILE, Source.DEFAULT)
-    assert_configurable_item(config.config_dir, water.constants.DEFAULT_CONFIG_DIR, Source.DEFAULT)
-    assert_configurable_item(config.recipe_file, water.constants.DEFAULT_RECIPE_FILE, Source.DEFAULT)
+    config = suikinkutsu.config.WaterConfig()
+    assert_configurable_item(config.config_file, suikinkutsu.constants.DEFAULT_CONFIG_FILE, Source.DEFAULT)
+    assert_configurable_item(config.config_dir, suikinkutsu.constants.DEFAULT_CONFIG_DIR, Source.DEFAULT)
+    assert_configurable_item(config.recipe_file, suikinkutsu.constants.DEFAULT_RECIPE_FILE, Source.DEFAULT)
 
 
 @pytest.mark.parametrize('env_override,cli_override,config_item',
@@ -47,7 +47,7 @@ def test_default_config(config_env):
                          ids=conftest.config_override_ids)
 def test_env_overrides_default(config_env, env_override: str, cli_override: str, config_item: str):
     os.environ[env_override] = 'override'
-    config = water.config.WaterConfig()
+    config = suikinkutsu.config.WaterConfig()
     assert_configurable_item(getattr(config, config_item), 'override', Source.ENVIRONMENT)
 
 
@@ -56,15 +56,15 @@ def test_env_overrides_default(config_env, env_override: str, cli_override: str,
                          ids=conftest.config_override_ids)
 def test_cli_overrides_default(config_env, env_override: str, cli_override: str, config_item: str, cli_arg_namespace: argparse.Namespace):
     setattr(cli_arg_namespace, cli_override, 'override')
-    config = water.config.WaterConfig()
+    config = suikinkutsu.config.WaterConfig()
     config.cli_assess(cli_arg_namespace)
     assert_configurable_item(getattr(config, config_item), 'override', Source.CLI)
 
 
 def test_cli_overrides_env(config_env, cli_arg_namespace: argparse.Namespace):
-    os.environ[water.constants.ENV_CONFIG_DIR] = 'env_override'
-    setattr(cli_arg_namespace, water.constants.CLI_CONFIG_DIR, 'cli_override')
-    config = water.config.WaterConfig()
+    os.environ[suikinkutsu.constants.ENV_CONFIG_DIR] = 'env_override'
+    setattr(cli_arg_namespace, suikinkutsu.constants.CLI_CONFIG_DIR, 'cli_override')
+    config = suikinkutsu.config.WaterConfig()
     config.cli_assess(cli_arg_namespace)
     assert_configurable_item(config.config_dir, 'cli_override', Source.CLI)
 
@@ -74,8 +74,8 @@ def test_config_file_overrides_default(config_env, tmp_path, cli_arg_namespace: 
     config_file.write_text(json.dumps({
         'config_dir': 'file-override'
     }))
-    os.environ[water.constants.ENV_CONFIG_FILE] = str(config_file)
-    config = water.config.WaterConfig()
+    os.environ[suikinkutsu.constants.ENV_CONFIG_FILE] = str(config_file)
+    config = suikinkutsu.config.WaterConfig()
     config.cli_assess(cli_arg_namespace)
     assert_configurable_item(config.config_file, str(config_file), Source.ENVIRONMENT)
     assert_configurable_item(config.config_dir, 'file-override', Source.CONFIGURATION)

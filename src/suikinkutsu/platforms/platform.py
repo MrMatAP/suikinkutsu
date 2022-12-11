@@ -27,8 +27,8 @@ import pathlib
 import subprocess
 from argparse import Namespace
 
-from water import MurkyWaterException, WaterExtension
-from water.blueprints import Blueprint, BlueprintInstance
+from suikinkutsu import MurkyWaterException, WaterExtension
+from suikinkutsu.blueprints import Blueprint, BlueprintInstance
 
 
 class WaterPlatform(WaterExtension):
