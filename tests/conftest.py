@@ -29,7 +29,9 @@ import water.constants
 config_overrides = [(water.constants.ENV_CONFIG_FILE, water.constants.CLI_CONFIG_FILE, 'config_file'),
                     (water.constants.ENV_CONFIG_DIR, water.constants.CLI_CONFIG_DIR, 'config_dir'),
                     (water.constants.ENV_RECIPE_FILE, water.constants.CLI_RECIPE_FILE, 'recipe_file'),
-                    (water.constants.ENV_SECRETS_FILE, water.constants.CLI_SECRETS_FILE, 'secrets_file')]
+                    (water.constants.ENV_SECRETS_FILE, water.constants.CLI_SECRETS_FILE, 'secrets_file'),
+                    (water.constants.ENV_OUTPUT, water.constants.CLI_OUTPUT, 'output'),
+                    (water.constants.ENV_PLATFORM, water.constants.CLI_PLATFORM, 'platform')]
 config_override_ids = [f'override-{entry[2]}' for entry in config_overrides]
 
 

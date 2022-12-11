@@ -27,14 +27,16 @@ import pathlib
 import enum
 import collections
 import pydantic
+
 import water.constants
+from water.outputs import OutputEntry, HumanWaterOutput
 
 
 class WaterConfiguration(pydantic.BaseModel):
     config_dir: str = pydantic.Field(description='Directory into which water generates configuration files',
                                      default=None)
-    default_output: str = pydantic.Field(description='Default output format', default=None)
-    default_platform: str = pydantic.Field(description='Default platform', default=None)
+    output: str = pydantic.Field(description='Default output format', default=None)
+    platform: str = pydantic.Field(description='Default platform', default=None)
 
     def display_dict(self) -> collections.OrderedDict:
         return collections.OrderedDict(self.dict())
@@ -164,10 +166,22 @@ class WaterConfig(object):
             env_override=water.constants.ENV_SECRETS_FILE,
             default_value=str(pathlib.Path(config_dir_path / f'{recipe_file_path.parent.name}.json')))
 
+        self._output = ConfigurableItem(
+            name='output',
+            source=Source.DEFAULT,
+            env_override=water.constants.ENV_OUTPUT,
+            default_value=water.constants.DEFAULT_OUTPUT)
+
+        self._platform = ConfigurableItem(
+            name='platform',
+            source=Source.DEFAULT,
+            env_override=water.constants.ENV_PLATFORM,
+            default_value=water.constants.DEFAULT_PLATFORM)
+
         if self._config_file.source == Source.ENVIRONMENT:
             self.config_load()
 
-    def cli_prepare(self, parser: argparse.ArgumentParser):
+    def cli_prepare(self, parser, subparser):
         parser.add_argument('-c',
                             dest=water.constants.CLI_CONFIG_FILE,
                             default=self.config_file.value,
@@ -188,6 +202,37 @@ class WaterConfig(object):
                             default=self.secrets_file.value,
                             required=False,
                             help='Override the secrets file for this invocation')
+        parser.add_argument('-o', '--output',
+                            dest=water.constants.CLI_OUTPUT,
+                            default=self.output.value,
+                            #choices=[name for name in self.outputs.keys()],
+                            required=False,
+                            help='Override the output style for this invocation')
+        parser.add_argument('-p', '--platform',
+                            dest=water.constants.CLI_PLATFORM,
+                            default=self.platform.value,
+                            #choices=[name for name in self.platforms.keys()],
+                            required=False,
+                            help='Override the default platform for this invocation')
+
+        config_parser = subparser.add_parser(name='config', help='Configuration Commands')
+        config_subparser = config_parser.add_subparsers()
+        config_show_parser = config_subparser.add_parser(name='show', help='Show current configuration')
+        config_show_parser.set_defaults(cmd=self.config_show)
+        config_set_parser = config_subparser.add_parser(name='set', help='Set configuration')
+        config_set_parser.add_argument('--config-dir',
+                                       dest='set_config_dir',
+                                       required=False,
+                                       help='Persist the directory in which water will generate configuration')
+        config_set_parser.add_argument('--output',
+                                       dest='set_config_output',
+                                       required=False,
+                                       help='Persist the preferred output style in the water configuration file')
+        config_set_parser.add_argument('--platform',
+                                       dest='set_config_platform',
+                                       required=False,
+                                       help='Persist the preferred platform in the water configuration file')
+        config_set_parser.set_defaults(cmd=self.config_set)
 
     def cli_assess(self, args: argparse.Namespace):
         if self._config_file.update_from_cli(args.override_config_file):
@@ -195,6 +240,8 @@ class WaterConfig(object):
         self._config_dir.update_from_cli(args.override_config_dir)
         self._recipe_file.update_from_cli(args.override_recipe_file)
         self._secrets_file.update_from_cli(args.override_secrets_file)
+        self._output.update_from_cli(args.override_output)
+        self._platform.update_from_cli(args.override_platform)
 
     def config_load(self):
         config_file_path = pathlib.Path(self.config_file.value)
@@ -202,20 +249,49 @@ class WaterConfig(object):
             return
         raw_config = WaterConfiguration.parse_file(config_file_path)
         self._config_dir.update_from_file(raw_config.config_dir)
-        # TODO: default_output and default_platform
+        self._output.update_from_file(raw_config.output)
+        self._platform.update_from_file(raw_config.platform)
+
+    def config_show(self, runtime, args: argparse.Namespace) -> int:
+        output = OutputEntry(title='Configuration',
+                             columns=['Key', 'Value', 'Source'],
+                             msg=[
+                                 ['config_file', str(self.config_file.value), str(self.config_file.source)],
+                                 ['config_dir', str(self.config_dir.value), str(self.config_dir.source)],
+                                 ['recipe_file', str(self.recipe_file.value), str(self.recipe_file.source)],
+                                 ['secrets_file', str(self.secrets_file.value), str(self.secrets_file.source)],
+                                 ['output', self.output.value, str(self.output.source)],
+                                 ['platform', self.platform.value, str(self.platform.source)]
+                             ])
+        runtime.output.print(output)
+        return 0
+
+    def config_set(self, runtime, args: argparse.Namespace) -> int:
+        # runtime.config_dir = args.set_config_dir
+        # runtime.config_output = args.set_config_output
+        # runtime.config_save()
+        return 0
 
     @property
-    def config_file(self):
+    def config_file(self) -> ConfigurableItem:
         return self._config_file
 
     @property
-    def config_dir(self):
+    def config_dir(self) -> ConfigurableItem:
         return self._config_dir
 
     @property
-    def recipe_file(self):
+    def recipe_file(self) -> ConfigurableItem:
         return self._recipe_file
 
     @property
-    def secrets_file(self):
+    def secrets_file(self) -> ConfigurableItem:
         return self._secrets_file
+
+    @property
+    def output(self) -> ConfigurableItem:
+        return self._output
+
+    @property
+    def platform(self) -> ConfigurableItem:
+        return self._platform

@@ -24,18 +24,16 @@ import os
 import pathlib
 
 import json
-from typing import List, Dict, Optional, Any
+from typing import List, Dict, Optional, Any, Type
 from argparse import ArgumentParser, Namespace
 
-from .config import ConfigurableItem, Source
+import water.constants
+from .config import ConfigurableItem, Source, WaterConfig
 from water.exceptions import MurkyWaterException
-from water.outputs import Output
+from water.outputs import Output, HumanWaterOutput
 from water.blueprints import Blueprint, BlueprintInstance, BlueprintInstanceList
 from water.platforms import WaterPlatform
-from water.schema import WaterConfiguration
-from water.constants import DEFAULT_CONFIG_FILE, ENV_CONFIG_FILE, DEFAULT_CONFIG_DIR, ENV_CONFIG_DIR, \
-    DEFAULT_OUTPUT_CLASS, ENV_OUTPUT_CLASS, DEFAULT_PLATFORM_CLASS, ENV_PLATFORM_CLASS, DEFAULT_RECIPE_FILE, \
-    ENV_RECIPE_FILE, ENV_SECRETS_FILE
+from water.config import WaterConfig
 
 
 class Runtime:
@@ -43,37 +41,11 @@ class Runtime:
     The runtime of all platforms, blueprints and their instances
     """
 
-    def __init__(self):
-        self._output_class = ConfigurableItem('output_class', Source.DEFAULT, DEFAULT_OUTPUT_CLASS)
-        self._platform_class = ConfigurableItem('platform_class', Source.DEFAULT, DEFAULT_PLATFORM_CLASS)
-        self._config_file = ConfigurableItem('config_file', Source.DEFAULT, pathlib.Path(DEFAULT_CONFIG_FILE))
-        self._config_dir = ConfigurableItem('config_dir', Source.DEFAULT, pathlib.Path(DEFAULT_CONFIG_DIR))
-        self._recipe_file = ConfigurableItem('recipe_file', Source.DEFAULT, pathlib.Path(DEFAULT_RECIPE_FILE))
-        self._secrets_file = ConfigurableItem('secrets_file',
-                                              Source.DEFAULT,
-                                              pathlib.Path(self._config_dir.value
-                                                           /
-                                                           f'{self._recipe_file.value.parent.name}.json'))
-        if ENV_CONFIG_FILE in os.environ:
-            self._config_file.value = pathlib.Path(os.getenv(ENV_CONFIG_FILE))
-            self._config_file.source = Source.ENVIRONMENT
-        if ENV_CONFIG_DIR in os.environ:
-            self._config_dir.value = pathlib.Path(os.getenv(ENV_CONFIG_DIR))
-            self._config_dir.source = Source.ENVIRONMENT
-        if ENV_RECIPE_FILE in os.environ:
-            self._recipe_file.value = pathlib.Path(os.getenv(ENV_RECIPE_FILE))
-            self._recipe_file.source = Source.ENVIRONMENT
-        if ENV_SECRETS_FILE in os.environ:
-            self._secrets_file.value = pathlib.Path(os.getenv(ENV_SECRETS_FILE))
-            self._secrets_file.source = Source.ENVIRONMENT
-        if ENV_OUTPUT_CLASS in os.environ:
-            self._output_class.value = os.getenv(ENV_OUTPUT_CLASS)
-            self._output_class.source = Source.ENVIRONMENT
-        if ENV_PLATFORM_CLASS in os.environ:
-            self._platform_class.value = os.getenv(ENV_PLATFORM_CLASS)
-            self._platform_class.source = Source.ENVIRONMENT
+    def __init__(self, config: WaterConfig):
+        self._config = config
 
         self._outputs: Dict[str, Output] = self._find_extensions(Output)
+        self._output = HumanWaterOutput()
         #self._platforms = self._find_extensions(WaterPlatform)
         self._platforms = {}
         self._blueprints = self._find_extensions(Blueprint)
@@ -82,133 +54,28 @@ class Runtime:
         self._secrets = {}
 
     def cli_prepare(self, parser: ArgumentParser):
-        parser.add_argument('-o', '--output',
-                            dest='override_output',
-                            default=str(self.output_class),
-                            choices=[name for name in self.outputs.keys()],
-                            required=False,
-                            help='Override the output style for this invocation')
-        parser.add_argument('-p', '--platform',
-                            dest='override_default_platform',
-                            default=str(self.platform_class),
-                            choices=[name for name in self.platforms.keys()],
-                            required=False,
-                            help='Override the default platform for this invocation')
-
+        pass
 
     def cli_assess(self, args: Namespace):
-        if args.override_config_file and args.override_config_file != DEFAULT_CONFIG_FILE:
-            self._config_file.value = pathlib.Path(args.override_config_file)
-            self._config_file.source = Source.CLI
-        self.config_load()
+        self._output = self._outputs.get(self.config.output.value)
+        #[self._instances.extend(platform.instance_list()) for platform in self.platforms.values()]
+        #self.secrets_load()
 
-        if args.override_config_dir and args.override_config_dir != DEFAULT_CONFIG_DIR:
-            self._config_dir.value = pathlib.Path(args.override_config_dir)
-            self._config_dir.source = Source.CLI
-        if args.override_output and args.override_output != DEFAULT_OUTPUT_CLASS:
-            self._output_class.value = args.override_output
-            self._output_class.source = Source.CLI
-        if args.override_default_platform and args.override_default_platform != DEFAULT_PLATFORM_CLASS:
-            self._platform_class.value = args.override_default_platform
-            self._platform_class.source = Source.CLI
-        if args.override_secrets_file and args.override_secrets_file != str(self.secrets_file.value):
-            self._secrets_file.value = pathlib.Path(args.override_secrets_file)
-            self._secrets_file.source = Source.CLI
-
-        [self._instances.extend(platform.instance_list()) for platform in self.platforms.values()]
-        self.secrets_load()
-
-    @property
-    def outputs(self) -> Dict[str, Output]:
-        return self._outputs
-
-    @property
-    def platforms(self) -> Dict[str, Any]:
-        return self._platforms
-
-    @property
-    def blueprints(self) -> Dict[str, Any]:
-        return self._blueprints
-
-    @property
-    def instances(self) -> List[BlueprintInstance]:
-        return self._instances
-
-    @property
-    def secrets(self) -> Dict[str, Any]:
-        return self._secrets
-
-    @secrets.setter
-    def secrets(self, value: Dict[str, Any]):
-        self._secrets = value
-        self.secrets_save()
-
-    @property
-    def config_file(self) -> ConfigurableItem:
-        return self._config_file
-
-    @property
-    def config_dir(self) -> ConfigurableItem:
-        return self._config_dir
-
-    @property
-    def recipe_file(self) -> ConfigurableItem:
-        return self._recipe_file
-
-    @property
-    def secrets_file(self) -> ConfigurableItem:
-        return self._secrets_file
-
-    @property
-    def output_class(self) -> ConfigurableItem:
-        return self._output_class
-
-    @property
-    def platform_class(self) -> ConfigurableItem:
-        return self._platform_class
-
-    @property
-    def output(self) -> Output:
-        if self.output_class.value not in self.outputs:
-            raise MurkyWaterException(msg=f'Desired output class {self.output_class} is not available')
-        return self.outputs[self.output_class.value]
-
-    @property
-    def platform(self) -> WaterPlatform:
-        if self.platform_class.value not in self.platforms:
-            raise MurkyWaterException(msg=f'Desired platform class {self.platform_class} is not available')
-        return self.platforms[self.platform_class.value]
-
-    def config_load(self):
-        raw_config = WaterConfiguration.construct()
-        config_file = self.config_file.value
-        if config_file.exists():
-            raw_config = WaterConfiguration.parse_file(config_file)
-        if raw_config.config_dir:
-            self.config_dir.value = pathlib.Path(raw_config.config_dir)
-            self.config_dir.source = Source.CONFIGURATION
-        if raw_config.default_output:
-            self.output_class.value = raw_config.default_output
-            self.output_class.source = Source.CONFIGURATION
-        if raw_config.default_platform:
-            self.platform_class.value = raw_config.default_platform
-            self.platform_class.source = Source.CONFIGURATION
-
-    def config_save(self):
-        config = WaterConfiguration(config_dir=self.config_dir,
-                                    default_output=self.output.name,
-                                    default_platform=self.platform.name)
-        with open(self.config_file.value, 'w+', encoding='UTF-8') as c:
-            json.dump(config.dict(), c, indent=2)
+    # def config_save(self):
+    #     config = WaterConfiguration(config_dir=self.config_dir,
+    #                                 default_output=self.output.name,
+    #                                 default_platform=self.platform.name)
+    #     with open(self.config_file.value, 'w+', encoding='UTF-8') as c:
+    #         json.dump(config.dict(), c, indent=2)
 
     def secrets_load(self):
-        secrets_file = self.secrets_file.value
+        secrets_file = self.config.secrets_file.value
         if secrets_file.exists():
             self._secrets = json.loads(secrets_file.read_text(encoding='UTF-8'))
 
     def secrets_save(self):
-        self.secrets_file.value.parent.mkdir(parents=True, exist_ok=True)
-        self.secrets_file.value.write_text(json.dumps(self.secrets, indent=2))
+        self.config.secrets_file.value.parent.mkdir(parents=True, exist_ok=True)
+        self.config.secrets_file.value.write_text(json.dumps(self.secrets, indent=2))
 
     def instance_create(self, blueprint_instance: BlueprintInstance):
         if self.instance_get(name=blueprint_instance.name,
@@ -258,3 +125,42 @@ class Runtime:
                 all_subclasses[subclass.name] = subclass(self)
             all_subclasses.update(self._find_extensions(subclass))
         return all_subclasses
+
+    @property
+    def config(self) -> WaterConfig:
+        return self._config
+
+    @property
+    def output(self):
+        return self._output
+
+    @output.setter
+    def output(self, value):
+        if value not in self.outputs:
+            raise MurkyWaterException(f'The desired output {value} is not available')
+        self._output = self._outputs.get(self.config.output.value)
+
+    @property
+    def outputs(self) -> Dict[str, Output]:
+        return self._outputs
+
+    @property
+    def platforms(self) -> Dict[str, Any]:
+        return self._platforms
+
+    @property
+    def blueprints(self) -> Dict[str, Any]:
+        return self._blueprints
+
+    @property
+    def instances(self) -> List[BlueprintInstance]:
+        return self._instances
+
+    @property
+    def secrets(self) -> Dict[str, Any]:
+        return self._secrets
+
+    @secrets.setter
+    def secrets(self, value: Dict[str, Any]):
+        self._secrets = value
+        self.secrets_save()

@@ -37,6 +37,7 @@ class YAMLWaterOutput(Output):
             print(yaml.safe_dump(entry.__dict__()))
             return
 
+        # TODO: We must reorder this
         d = entry.__dict__()
         d['msg'] = dict(zip(entry.columns, entry.msg))
         del(d['columns'])

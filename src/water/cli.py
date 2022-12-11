@@ -25,29 +25,9 @@ import os
 import argparse
 
 from water import __version__, MurkyWaterException
+from water.config import WaterConfig
 from water.runtime import Runtime
 from water.outputs import OutputEntry, OutputSeverity
-
-
-def config_show(runtime: Runtime, args: argparse.Namespace) -> int:
-    runtime.output.print(OutputEntry(title='Configuration',
-                                     columns=['Key', 'Value', 'Source'],
-                                     msg=[
-                                         ['config_file', str(runtime.config_file.value), str(runtime.config_file.source)],
-                                         ['config_dir', str(runtime.config_dir.value), str(runtime.config_dir.source)],
-                                         ['output', runtime.output_class.value, str(runtime.output_class.source)],
-                                         ['platform', runtime.platform_class.value, str(runtime.platform_class.source)],
-                                         ['recipe_file', str(runtime.recipe_file.value), str(runtime.platform_class.source)],
-                                         ['secrets_file', str(runtime.secrets_file.value), str(runtime.secrets_file.source)]
-                                     ]))
-    return 0
-
-
-def config_set(runtime: Runtime, args: argparse.Namespace) -> int:
-    runtime.config_dir = args.set_config_dir
-    runtime.config_output = args.set_config_output
-    runtime.config_save()
-    return 0
 
 
 def platform_list(runtime: Runtime, args: argparse.Namespace) -> int:
@@ -124,25 +104,6 @@ def main() -> int:
     parser = argparse.ArgumentParser(add_help=False, description=f'{__name__} - {__version__}')
     subparsers = parser.add_subparsers(dest='group')
 
-    config_parser = subparsers.add_parser(name='config', help='Configuration Commands')
-    config_subparser = config_parser.add_subparsers()
-    config_show_parser = config_subparser.add_parser(name='show', help='Show current configuration')
-    config_show_parser.set_defaults(cmd=config_show)
-    config_set_parser = config_subparser.add_parser(name='set', help='Set configuration')
-    config_set_parser.add_argument('--config-dir',
-                                   dest='set_config_dir',
-                                   required=False,
-                                   help='Persist the directory in which water will generate configuration')
-    config_set_parser.add_argument('--output',
-                                   dest='set_config_output',
-                                   required=False,
-                                   help='Persist the preferred output style in the water configuration file')
-    config_set_parser.add_argument('--platform',
-                                   dest='set_config_platform',
-                                   required=False,
-                                   help='Persist the preferred platform in the water configuration file')
-    config_set_parser.set_defaults(cmd=config_set)
-
     pf_parser = subparsers.add_parser(name='platform', help='Platform Commands')
     pf_subparser = pf_parser.add_subparsers()
     pf_list_parser = pf_subparser.add_parser('list', help='List available platforms')
@@ -174,11 +135,14 @@ def main() -> int:
 
     runtime = None
     try:
-        runtime = Runtime()
+        config = WaterConfig()
+        config.cli_prepare(parser, subparsers)
+        runtime = Runtime(config)
         [blueprint.cli_prepare(subparsers) for blueprint in runtime.blueprints.values()]
         [platform.cli_prepare(subparsers) for platform in runtime.platforms.values()]
         runtime.cli_prepare(parser)
         args = parser.parse_args()
+        config.cli_assess(args)
         runtime.cli_assess(args)
         [blueprint.cli_assess(args) for blueprint in runtime.blueprints.values()]
         [platform.cli_assess(args) for platform in runtime.platforms.values()]
