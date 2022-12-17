@@ -48,8 +48,9 @@ class HumanWaterOutput(Output):
         title = f'[{entry.severity.value}] {entry.title} - {entry.code}' or None
         min_width = len(title) if title else None
         table = Table(title=title,
-                      show_edge=True,
-                      show_lines=True,
+                      show_edge=False,
+                      show_lines=False,
+                      expand=True,
                       min_width=min_width,
                       box=ROUNDED)
         for col in entry.columns or []:
