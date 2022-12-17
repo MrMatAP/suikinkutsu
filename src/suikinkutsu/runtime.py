@@ -28,12 +28,12 @@ from typing import List, Dict, Optional, Any, Type
 from argparse import ArgumentParser, Namespace
 
 import suikinkutsu.constants
-from .config import ConfigurableItem, Source, WaterConfig
+from .config import ConfigurableItem, Source, Configuration
 from suikinkutsu.exceptions import MurkyWaterException
 from suikinkutsu.outputs import Output, HumanWaterOutput
 from suikinkutsu.blueprints import Blueprint, BlueprintInstance, BlueprintInstanceList
-from suikinkutsu.platforms import WaterPlatform
-from suikinkutsu.config import WaterConfig
+from suikinkutsu.platforms import Platform
+from suikinkutsu.config import Configuration
 
 
 class Runtime:
@@ -41,11 +41,12 @@ class Runtime:
     The runtime of all platforms, blueprints and their instances
     """
 
-    def __init__(self, config: WaterConfig):
+    def __init__(self, config: Configuration):
         self._config = config
 
         self._outputs: Dict[str, Output] = self._find_extensions(Output)
         self._output = HumanWaterOutput()
+
         #self._platforms = self._find_extensions(WaterPlatform)
         self._platforms = {}
         self._blueprints = self._find_extensions(Blueprint)
@@ -92,7 +93,7 @@ class Runtime:
 
     def instance_list(self,
                       blueprint: Optional[Blueprint] = None,
-                      platform: Optional[WaterPlatform] = None) -> List[BlueprintInstance]:
+                      platform: Optional[Platform] = None) -> List[BlueprintInstance]:
         instances = self._instances
         if platform:
             instances = list(filter(lambda _: _.platform == platform, instances))
@@ -103,7 +104,7 @@ class Runtime:
     def instance_get(self,
                      name: str,
                      blueprint: Optional[Blueprint] = None,
-                     platform: Optional[WaterPlatform] = None) -> Optional[BlueprintInstance]:
+                     platform: Optional[Platform] = None) -> Optional[BlueprintInstance]:
         instances = list(filter(lambda _: _.name == name,
                                 self.instance_list(blueprint, platform)))
         return instances[0] if len(instances) > 0 else None
@@ -127,7 +128,7 @@ class Runtime:
         return all_subclasses
 
     @property
-    def config(self) -> WaterConfig:
+    def config(self) -> Configuration:
         return self._config
 
     @property
