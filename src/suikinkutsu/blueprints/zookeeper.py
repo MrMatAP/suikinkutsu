@@ -20,16 +20,15 @@
 #  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 #  SOFTWARE.
 
-from argparse import Namespace
+import argparse
 
+from suikinkutsu.config import Configuration
 from suikinkutsu.schema import BlueprintSchema
 from suikinkutsu.constants import LABEL_BLUEPRINT, LABEL_CREATED_BY
 from .blueprint import Blueprint, BlueprintInstance
 
 
 class Zookeeper(Blueprint):
-    name: str = 'zookeeper'
-    description: str = 'Zookeeper'
     _defaults: BlueprintSchema = BlueprintSchema(
         image='confluentinc/cp-zookeeper:7.2.1',
         volumes={
@@ -51,8 +50,14 @@ class Zookeeper(Blueprint):
         depends_on=[]
     )
 
-    def cli_prepare(self, parser):
-        zk_parser = parser.add_parser(name='zk', help='Zookeeper Commands')
+    def __init__(self, config: Configuration):
+        super().__init__(config)
+        self._config = config
+        self._name = 'zookeeper'
+        self._description = 'Zookeeper'
+
+    def cli_prepare(self, parser, subparsers):
+        zk_parser = subparsers.add_parser(name='zk', help='Zookeeper Commands')
         zk_subparser = zk_parser.add_subparsers()
         zk_create_parser = zk_subparser.add_parser(name='create', help='Create a Zookeeper instance')
         zk_create_parser.set_defaults(cmd=self.zookeeper_create)
@@ -68,7 +73,7 @@ class Zookeeper(Blueprint):
                                       required=True,
                                       help='Instance name')
 
-    def zookeeper_create(self, runtime, args: Namespace):
+    def zookeeper_create(self, runtime, args: argparse.Namespace):
         blueprint_instance = BlueprintInstance(name=args.name,
                                                platform=runtime.platform,
                                                blueprint=self)
@@ -82,6 +87,6 @@ class Zookeeper(Blueprint):
             runtime_secrets[args.name]['connection'] = f'{args.name}:{self.environment.get("ZOOKEEPER_CLIENT_PORT")}'
         self.runtime.secrets = runtime_secrets
 
-    def zookeeper_remove(self, runtime, args: Namespace):
+    def zookeeper_remove(self, runtime, args: argparse.Namespace):
         blueprint_instance = self.runtime.instance_get(name=args.name, blueprint=self)
         self.runtime.instance_remove(blueprint_instance)

@@ -20,28 +20,41 @@
 #  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 #  SOFTWARE.
 
-from typing import Optional, List
+import typing
 import json
 import shutil
 
 from suikinkutsu import MurkyWaterException
-from .platform import WaterPlatform
+from .platform import Platform
+from suikinkutsu.config import Configuration
 from suikinkutsu.blueprints import Blueprint, BlueprintInstance, BlueprintVolume
 from suikinkutsu.constants import LABEL_BLUEPRINT, LABEL_CREATED_BY
 
 
-class Docker(WaterPlatform):
+class Docker(Platform):
     """
     Docker platform
     """
 
-    def __init__(self, runtime: 'Runtime'):
-        super().__init__(runtime)
+    def __init__(self, config: Configuration):
+        super().__init__(config)
         self._name = 'docker'
         self._description = 'Docker is the classic containerisation platform'
+
         self._executable_name = 'docker'
         self._executable = shutil.which(self._executable_name)
         self._available = None
+
+    def apply(self, blueprint: Blueprint):
+        pass
+
+    @property
+    def executable_name(self) -> str:
+        return self._executable_name
+
+    @property
+    def executable(self):
+        return self._executable
 
     @property
     def available(self):
@@ -76,8 +89,8 @@ class Docker(WaterPlatform):
         blueprint_instance.id = result.stdout.strip()
         blueprint_instance.running = True
 
-    def instance_list(self, blueprint: Optional[Blueprint] = None) -> List[BlueprintInstance]:
-        platform_instances: List[BlueprintInstance] = []
+    def instance_list(self, blueprint: typing.Optional[Blueprint] = None) -> typing.List[BlueprintInstance]:
+        platform_instances: typing.List[BlueprintInstance] = []
         if not self.available:
             return platform_instances
         result = self.execute(['container', 'ls', '--all', '--quiet'])
@@ -108,7 +121,7 @@ class Docker(WaterPlatform):
             platform_instances.append(instance)
         return platform_instances
 
-    def instance_show(self, name: str, blueprint: Optional[Blueprint] = None):
+    def instance_show(self, name: str, blueprint: typing.Optional[Blueprint] = None):
         # result = self.execute(['container', 'inspect', blueprint.name])
         pass
 

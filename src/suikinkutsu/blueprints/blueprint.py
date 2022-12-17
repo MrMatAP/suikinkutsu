@@ -19,19 +19,19 @@
 #  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 #  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 #  SOFTWARE.
-
-from argparse import Namespace
 import abc
+import argparse
 from collections import OrderedDict
 from typing import Optional, List
 
+from suikinkutsu.config import Configuration
+from suikinkutsu.outputs import OutputEntry
 from suikinkutsu.schema import BlueprintSchema
 from suikinkutsu.constants import LABEL_BLUEPRINT
 
 
-class Blueprint(abc.ABC):
-    name: str = 'base'
-    description: str = 'An abstract base blueprint'
+class Blueprint:
+
     _defaults: BlueprintSchema = BlueprintSchema(
         image='',
         volumes={},
@@ -41,23 +41,25 @@ class Blueprint(abc.ABC):
         depends_on=[]
     )
 
-    def __init__(self,
-                 runtime: 'Runtime',
-                 schema: Optional[BlueprintSchema] = None):
-        self._runtime = runtime
-        self._schema = schema or self._defaults
-        if schema:
-            self._schema.merge_defaults(self._defaults)
+    def __init__(self, config: Configuration):
+        self._config = config
 
-    def cli_prepare(self, parser) -> None:
+        self._name = 'base'
+        self._description = 'An abstract base blueprint'
+
+    def cli_prepare(self, parser, subparsers) -> None:
         """
         Hook to declare CLI arguments
         Args:
-            parser: The ArgumentParser to attach CLI arguments to
+            parser: The ArgumentParser to attach top-level CLI arguments to
+            subparsers: The subparser to attach subcommands to
         """
-        pass
+        blueprint_parser = subparsers.add_parser(name='blueprint', help='Blueprint commands')
+        blueprint_subparsers = blueprint_parser.add_subparsers()
+        blueprint_list_parser = blueprint_subparsers.add_parser('list', help='List available blueprints')
+        blueprint_list_parser.set_defaults(cmd=self.blueprint_list)
 
-    def cli_assess(self, args: Namespace) -> None:
+    def cli_assess(self, args: argparse.Namespace) -> None:
         """
         Hook to parse CLI arguments
         Args:
@@ -65,9 +67,23 @@ class Blueprint(abc.ABC):
         """
         pass
 
+    def blueprint_list(self, runtime, args: argparse.Namespace) -> int:
+        output = OutputEntry(title='Blueprints',
+                             columns=['Name', 'Description'],
+                             msg=[[bp.name, bp.description] for bp in self.blueprints()])
+        runtime.output.print(output)
+        return 0
+
+    def blueprints(self):
+        return [bp(self._config) for bp in Blueprint.__subclasses__()]
+
     @property
-    def runtime(self):
-        return self._runtime
+    def name(self):
+        return self._name
+
+    @property
+    def description(self):
+        return self._description
 
     @property
     def image(self):

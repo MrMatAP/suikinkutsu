@@ -20,8 +20,9 @@
 #  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 #  SOFTWARE.
 
-from argparse import Namespace
+import argparse
 
+from suikinkutsu.config import Configuration
 from suikinkutsu.schema import BlueprintSchema
 from suikinkutsu.constants import LABEL_BLUEPRINT, LABEL_CREATED_BY
 from .blueprint import Blueprint, BlueprintInstance
@@ -31,8 +32,7 @@ class Kafka(Blueprint):
     """
     Kafka blueprint
     """
-    name: str = 'kafka'
-    description: str = 'Kafka'
+
     _defaults: BlueprintSchema = BlueprintSchema(
         image='confluentinc/cp-kafka:7.2.1',
         volumes={
@@ -58,8 +58,14 @@ class Kafka(Blueprint):
         depends_on=['zk']
     )
 
-    def cli_prepare(self, parser):
-        kafka_parser = parser.add_parser(name='kafka', help='Kafka Commands')
+    def __init__(self, config: Configuration):
+        super().__init__(config)
+        self._config = config
+        self._name = 'kafka'
+        self._description = 'Apache Kafka'
+
+    def cli_prepare(self, parser, subparsers):
+        kafka_parser = subparsers.add_parser(name='kafka', help='Kafka Commands')
         kafka_subparser = kafka_parser.add_subparsers()
         kafka_create_parser = kafka_subparser.add_parser(name='create', help='Create a Kafka instance')
         kafka_create_parser.add_argument('-n', '--instance-name',
@@ -76,7 +82,7 @@ class Kafka(Blueprint):
                                          help='Instance name')
         kafka_remove_parser.set_defaults(cmd=self.kafka_remove)
 
-    def kafka_create(self, runtime, args: Namespace):
+    def kafka_create(self, runtime, args: argparse.Namespace):
         blueprint_instance = BlueprintInstance(name=args.name,
                                                platform=self.runtime.platform,
                                                blueprint=self)
@@ -90,6 +96,6 @@ class Kafka(Blueprint):
             runtime_secrets[args.name]['connection'] = f'{args.name}:29092'
         self.runtime.secrets = runtime_secrets
 
-    def kafka_remove(self, runtime, args: Namespace):
+    def kafka_remove(self, runtime, args: argparse.Namespace):
         blueprint_instance = self.runtime.instance_get(name=args.name, blueprint=self)
         self.runtime.instance_remove(blueprint_instance)

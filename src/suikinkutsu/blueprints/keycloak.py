@@ -20,9 +20,10 @@
 #  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 #  SOFTWARE.
 
-from argparse import Namespace
+import argparse
 import secrets
 
+from suikinkutsu.config import Configuration
 from suikinkutsu.schema import BlueprintSchema
 from suikinkutsu.blueprints.blueprint import Blueprint, BlueprintInstance
 from suikinkutsu.constants import LABEL_BLUEPRINT, LABEL_CREATED_BY
@@ -55,8 +56,14 @@ class Keycloak(Blueprint):
         depends_on=[]
     )
 
-    def cli_prepare(self, parser):
-        kc_parser = parser.add_parser(name='kc', help='Keycloak Commands')
+    def __init__(self, config: Configuration):
+        super().__init__(config)
+        self._config = config
+        self._name = 'keycloak'
+        self._description = 'Keycloak is an Identity Provider implementing OAuth 2 and SAML authentication/authorisation'
+
+    def cli_prepare(self, parser, subparsers):
+        kc_parser = subparsers.add_parser(name='kc', help='Keycloak Commands')
         kc_subparser = kc_parser.add_subparsers()
         kc_create_parser = kc_subparser.add_parser(name='create', help='Create a Keycloak instance')
         kc_create_parser.set_defaults(cmd=self.kc_create)
@@ -73,7 +80,7 @@ class Keycloak(Blueprint):
                                       required=False,
                                       help='Instance name')
 
-    def kc_create(self, runtime, args: Namespace):
+    def kc_create(self, runtime, args: argparse.Namespace):
         blueprint_instance = BlueprintInstance(name=args.name,
                                                platform=self.runtime.platform,
                                                blueprint=self)
@@ -91,6 +98,6 @@ class Keycloak(Blueprint):
             runtime_secrets[args.name]['admin'] = self.environment.get('KEYCLOAK_PASSWORD')
         self.runtime.secrets = runtime_secrets
 
-    def kc_remove(self, runtime, args: Namespace):
+    def kc_remove(self, runtime, args: argparse.Namespace):
         blueprint_instance = self.runtime.instance_get(name=args.name, blueprint=self)
         self.runtime.instance_remove(blueprint_instance)

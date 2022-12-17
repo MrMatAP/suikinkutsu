@@ -20,8 +20,9 @@
 #  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 #  SOFTWARE.
 
-from argparse import Namespace
+import argparse
 
+from suikinkutsu.config import Configuration
 from suikinkutsu.schema import BlueprintSchema
 from suikinkutsu.constants import LABEL_BLUEPRINT, LABEL_CREATED_BY
 from .blueprint import Blueprint, BlueprintInstance
@@ -31,8 +32,6 @@ class KSQLDB(Blueprint):
     """
     Kafka blueprint
     """
-    name: str = 'ksqldb'
-    description: str = 'KSQLDB on top of Kafka'
     _defaults: BlueprintSchema = BlueprintSchema(
         image='confluentinc/ksqldb-server:0.27.2',
         volumes={},
@@ -50,8 +49,14 @@ class KSQLDB(Blueprint):
         depends_on=['kafka']
     )
 
-    def cli_prepare(self, parser):
-        ksqldb_parser = parser.add_parser(name='ksqldb', help='KSQLDB Commands')
+    def __init__(self, config: Configuration):
+        super().__init__(config)
+        self._config = config
+        self._name = 'ksqldb'
+        self._description = 'KSQLDB on top of Kafka'
+
+    def cli_prepare(self, parser, subparsers):
+        ksqldb_parser = subparsers.add_parser(name='ksqldb', help='KSQLDB Commands')
         ksqldb_subparser = ksqldb_parser.add_subparsers()
         ksqldb_create_parser = ksqldb_subparser.add_parser(name='create', help='Create a KSQLDB instance')
         ksqldb_create_parser.add_argument('-n', '--instance-name',
@@ -68,7 +73,7 @@ class KSQLDB(Blueprint):
                                           help='Instance name')
         ksqldb_remove_parser.set_defaults(cmd=self.ksqldb_remove)
 
-    def ksqldb_create(self, runtime, args: Namespace):
+    def ksqldb_create(self, runtime, args: argparse.Namespace):
         blueprint_instance = BlueprintInstance(name=args.name,
                                                platform=self.runtime.platform,
                                                blueprint=self)
@@ -82,6 +87,6 @@ class KSQLDB(Blueprint):
             runtime_secrets[args.name]['connection'] = f'{args.name}:8088'
         self.runtime.secrets = runtime_secrets
 
-    def ksqldb_remove(self, runtime, args: Namespace):
+    def ksqldb_remove(self, runtime, args: argparse.Namespace):
         blueprint_instance = self.runtime.instance_get(name=args.name, blueprint=self)
         self.runtime.instance_remove(blueprint_instance)

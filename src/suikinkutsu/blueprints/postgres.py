@@ -20,11 +20,12 @@
 #  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 #  SOFTWARE.
 
-from argparse import Namespace
+import argparse
 import secrets
 import psycopg2
 from psycopg2 import sql
 
+from suikinkutsu.config import Configuration
 from suikinkutsu.schema import BlueprintSchema
 from suikinkutsu.exceptions import MurkyWaterException
 from suikinkutsu.constants import LABEL_BLUEPRINT, LABEL_CREATED_BY
@@ -35,8 +36,6 @@ class PostgreSQL(Blueprint):
     """
     PostgreSQL blueprint
     """
-    name: str = 'postgres'
-    description: str = 'PostgreSQL is a modern relational database'
     _defaults: BlueprintSchema = BlueprintSchema(
         image='postgres:14.5',
         volumes={'pg_datavol': '/var/lib/postgresql/data'},
@@ -53,8 +52,14 @@ class PostgreSQL(Blueprint):
         depends_on=[]
     )
 
-    def cli_prepare(self, parser):
-        pg_parser = parser.add_parser(name='pg', help='PostgreSQL Commands')
+    def __init__(self, config: Configuration):
+        super().__init__(config)
+        self._config = config
+        self._name = 'postgres'
+        self._description = 'PostgreSQL is a modern relational database'
+
+    def cli_prepare(self, parser, subparsers):
+        pg_parser = subparsers.add_parser(name='pg', help='PostgreSQL Commands')
         pg_subparser = pg_parser.add_subparsers()
         pg_create_parser = pg_subparser.add_parser(name='create', help='Create a PostgreSQL instance')
         pg_create_parser.set_defaults(cmd=self.pg_create)
@@ -151,7 +156,7 @@ class PostgreSQL(Blueprint):
                                        help='Dump file to restore from')
         pg_restore_parser.set_defaults(cmd=self.pg_restore)
 
-    def pg_create(self, runtime, args: Namespace):
+    def pg_create(self, runtime, args: argparse.Namespace):
         blueprint_instance = BlueprintInstance(name=args.name,
                                                platform=self.runtime.platform,
                                                blueprint=self)
@@ -170,7 +175,7 @@ class PostgreSQL(Blueprint):
             runtime_secrets[args.name]['roles']['postgres'] = self.environment.get('POSTGRES_PASSWORD')
         self.runtime.secrets = runtime_secrets
 
-    def pg_remove(self, runtime: 'Runtime', args: Namespace):
+    def pg_remove(self, runtime: 'Runtime', args: argparse.Namespace):
         blueprint_instance = self.runtime.instance_get(name=args.name, blueprint=self)
         self.runtime.instance_remove(blueprint_instance)
 
@@ -194,7 +199,7 @@ class PostgreSQL(Blueprint):
                                 user='postgres',
                                 password=instance_password)
 
-    def pg_role_create(self, runtime: 'Runtime', args: Namespace):
+    def pg_role_create(self, runtime: 'Runtime', args: argparse.Namespace):
         conn = self._pg_conn(args.name)
         cur = conn.cursor()
         query = sql.SQL('CREATE ROLE {} ENCRYPTED PASSWORD %s LOGIN').format(sql.Identifier(args.role_name))
@@ -212,7 +217,7 @@ class PostgreSQL(Blueprint):
         self.runtime.secrets.get(args.name, {}).get('roles', {})[args.role_name] = args.role_password
         self.runtime.secrets_save()
 
-    def pg_role_remove(self, runtime: 'Runtime', args: Namespace):
+    def pg_role_remove(self, runtime: 'Runtime', args: argparse.Namespace):
         conn = self._pg_conn(args.name)
         cur = conn.cursor()
         if args.remove_schema:
@@ -227,7 +232,7 @@ class PostgreSQL(Blueprint):
             del self.runtime.secrets[args.name]['roles'][args.role_name]
         self.runtime.secrets_save()
 
-    def pg_dumpall(self, runtime: 'Runtime', args: Namespace):
+    def pg_dumpall(self, runtime: 'Runtime', args: argparse.Namespace):
         instance = self.runtime.instance_get(name=args.name, blueprint=self)
         if not instance:
             self.runtime.output.error(f'There is no instance called {args.name}')
@@ -237,7 +242,7 @@ class PostgreSQL(Blueprint):
         with open(args.dumpfile, 'wt+', encoding='UTF-8') as d:
             d.write(result.stdout)
 
-    def pg_dump(self, runtime: 'Runtime', args: Namespace):
+    def pg_dump(self, runtime: 'Runtime', args: argparse.Namespace):
         instance = self.runtime.instance_get(name=args.name, blueprint=self)
         if not instance:
             self.runtime.output.error(f'There is no instance called {args.name}')
@@ -249,7 +254,7 @@ class PostgreSQL(Blueprint):
         with open(args.dumpfile, 'wt+', encoding='UTF-8') as d:
             d.write(result.stdout)
 
-    def pg_restore(self, runtime: 'Runtime', args: Namespace):
+    def pg_restore(self, runtime: 'Runtime', args: argparse.Namespace):
         instance = self.runtime.instance_get(name=args.name, blueprint=self)
         if not instance:
             self.runtime.output.error(f'There is no instance called {args.name}')

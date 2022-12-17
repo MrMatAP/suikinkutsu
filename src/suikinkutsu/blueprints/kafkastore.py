@@ -20,8 +20,9 @@
 #  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 #  SOFTWARE.
 
-from argparse import Namespace
+import argparse
 
+from suikinkutsu.config import Configuration
 from suikinkutsu.schema import BlueprintSchema
 from suikinkutsu.constants import LABEL_BLUEPRINT, LABEL_CREATED_BY
 from .blueprint import Blueprint, BlueprintInstance
@@ -31,8 +32,6 @@ class KafkaStore(Blueprint):
     """
     Kafka blueprint
     """
-    name: str = 'kafkastore'
-    description: str = 'Schema Registry Store for Kafka'
     _defaults: BlueprintSchema = BlueprintSchema(
         image='confluentinc/cp-schema-registry:5.4.9',
         volumes={
@@ -51,8 +50,14 @@ class KafkaStore(Blueprint):
         depends_on=['kafka']
     )
 
-    def cli_prepare(self, parser):
-        kafkastore_parser = parser.add_parser(name='kafkastore', help='KafkaStore Commands')
+    def __init__(self, config: Configuration):
+        super().__init__(config)
+        self._config = config
+        self._name = 'kafkastore'
+        self._description = 'Schema Registry Store for Apache Kafka'
+
+    def cli_prepare(self, parser, subparsers):
+        kafkastore_parser = subparsers.add_parser(name='kafkastore', help='KafkaStore Commands')
         kafkastore_subparser = kafkastore_parser.add_subparsers()
         kafkastore_create_parser = kafkastore_subparser.add_parser(name='create', help='Create a KafkaStore instance')
         kafkastore_create_parser.add_argument('-n', '--instance-name',
@@ -69,7 +74,7 @@ class KafkaStore(Blueprint):
                                               help='Instance name')
         kafkastore_remove_parser.set_defaults(cmd=self.kafkastore_remove)
 
-    def kafkastore_create(self, runtime, args: Namespace):
+    def kafkastore_create(self, runtime, args: argparse.Namespace):
         blueprint_instance = BlueprintInstance(name=args.name,
                                                platform=self.runtime.platform,
                                                blueprint=self)
@@ -83,6 +88,6 @@ class KafkaStore(Blueprint):
             runtime_secrets[args.name]['connection'] = f'{args.name}:8081'
         self.runtime.secrets = runtime_secrets
 
-    def kafkastore_remove(self, runtime, args: Namespace):
+    def kafkastore_remove(self, runtime, args: argparse.Namespace):
         blueprint_instance = self.runtime.instance_get(name=args.name, blueprint=self)
         self.runtime.instance_remove(blueprint_instance)
