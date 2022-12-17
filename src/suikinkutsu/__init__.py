@@ -22,7 +22,6 @@
 
 import importlib.metadata
 from .exceptions import MurkyWaterException
-from .water_extension import WaterExtension
 
 try:
     __version__ = importlib.metadata.version('suikinkutsu')
