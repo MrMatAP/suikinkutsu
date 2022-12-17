@@ -20,11 +20,11 @@
 #  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 #  SOFTWARE.
 
-from suikinkutsu.config import WaterConfig
+from suikinkutsu.config import Configuration
 from suikinkutsu.runtime import Runtime
 
 
 def test_runtime_loads():
-    config = WaterConfig()
+    config = Configuration()
     runtime = Runtime(config)
     runtime.cli_assess(None)

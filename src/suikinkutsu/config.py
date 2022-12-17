@@ -139,7 +139,7 @@ class ConfigurableItem(object):
         return str(self._value)
 
 
-class WaterConfig(object):
+class Configuration(object):
 
     def __init__(self):
         self._config_file = ConfigurableItem(
