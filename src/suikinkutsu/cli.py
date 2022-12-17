@@ -25,23 +25,12 @@ import os
 import argparse
 
 from suikinkutsu import __version__, MurkyWaterException
-from suikinkutsu.config import WaterConfig
+from suikinkutsu.config import Configuration
+from suikinkutsu.blueprints import Blueprint
+from suikinkutsu.platforms import Platform
+from suikinkutsu.project import Project
 from suikinkutsu.runtime import Runtime
 from suikinkutsu.outputs import OutputEntry, OutputSeverity
-
-
-def platform_list(runtime: Runtime, args: argparse.Namespace) -> int:
-    runtime.output.print(OutputEntry(title='Platforms',
-                                     columns=['Platform', 'Available', 'Description'],
-                                     msg=[[name, str(pf.available), pf.description] for name, pf in runtime.platforms.items()]))
-    return 0
-
-
-def blueprint_list(runtime: Runtime, args: argparse.Namespace) -> int:
-    runtime.output.print(OutputEntry(title='Blueprints',
-                                     columns=['Blueprint', 'Description'],
-                                     msg=[[name, bp.description] for name, bp in runtime.blueprints.items()]))
-    return 0
 
 
 def instance_list(runtime: Runtime, args: argparse.Namespace) -> int:
@@ -104,16 +93,6 @@ def main() -> int:
     parser = argparse.ArgumentParser(add_help=False, description=f'{__name__} - {__version__}')
     subparsers = parser.add_subparsers(dest='group')
 
-    pf_parser = subparsers.add_parser(name='platform', help='Platform Commands')
-    pf_subparser = pf_parser.add_subparsers()
-    pf_list_parser = pf_subparser.add_parser('list', help='List available platforms')
-    pf_list_parser.set_defaults(cmd=platform_list)
-
-    bp_parser = subparsers.add_parser(name='blueprint', help='Blueprint Commands')
-    bp_subparser = bp_parser.add_subparsers()
-    bp_list_parser = bp_subparser.add_parser('list', help='List available blueprints')
-    bp_list_parser.set_defaults(cmd=blueprint_list)
-
     instance_parser = subparsers.add_parser(name='instance', help='Instance Commands')
     instance_subparser = instance_parser.add_subparsers()
     instance_list_parser = instance_subparser.add_parser('list', help='List instances')
@@ -135,17 +114,24 @@ def main() -> int:
 
     runtime = None
     try:
-        config = WaterConfig()
+        config = Configuration()
         config.cli_prepare(parser, subparsers)
+        blueprint = Blueprint(config)
+        blueprint.cli_prepare(parser, subparsers)
+        platform = Platform(config)
+        platform.cli_prepare(parser, subparsers)
+        project = Project(config)
+        project.cli_prepare(parser, subparsers)
         runtime = Runtime(config)
-        [blueprint.cli_prepare(subparsers) for blueprint in runtime.blueprints.values()]
-        [platform.cli_prepare(subparsers) for platform in runtime.platforms.values()]
+        [blueprint.cli_prepare(parser, subparsers) for blueprint in blueprint.blueprints()]
         runtime.cli_prepare(parser)
+
         args = parser.parse_args()
         config.cli_assess(args)
+        project.cli_assess(args)
         runtime.cli_assess(args)
         [blueprint.cli_assess(args) for blueprint in runtime.blueprints.values()]
-        [platform.cli_assess(args) for platform in runtime.platforms.values()]
+        platform.cli_assess(args)
 
         # Execute the desired command
         if hasattr(args, 'cmd'):
