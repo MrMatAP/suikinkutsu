@@ -21,54 +21,111 @@
 #  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 #  SOFTWARE.
 
-from typing import List, Dict, Optional
+import typing
 import abc
 import pathlib
 import subprocess
-from argparse import Namespace
+import argparse
 
-from suikinkutsu import MurkyWaterException, WaterExtension
+from suikinkutsu import MurkyWaterException
+from suikinkutsu.config import Configuration
 from suikinkutsu.blueprints import Blueprint, BlueprintInstance
+from suikinkutsu.outputs import OutputEntry
 
 
-class WaterPlatform(WaterExtension):
+class Platform:
 
-    def __init__(self, runtime: 'Runtime'):
-        super().__init__(runtime)
+    def __init__(self, config: Configuration):
+        self._config = config
+
         self._name: str = 'base'
         self._description: str = 'Abstract base for a platform'
         self._executable_name: str = None
         self._executable_path: pathlib.Path = None
         self._executable = None
         self._available = False
+        self._platforms = None
+        self._instances = None
 
     @classmethod
-    def factory(cls, runtime: 'Runtime') -> Dict[str, 'WaterPlatform']:
+    def factory(cls, config: Configuration) -> typing.Dict[str, 'Platform']:
         """
         Some platforms will use the same executable to connect to multiple platform instances (e.g. kubectl).
         Using a factory method permits returning multiple class instances, one per platform instance
         Args:
-            runtime: The runtime instance we are associated with
+            config: The configuration
 
         Returns:
             A list of class instances
         """
-        self = cls(runtime)
-        return {self.name: self}
+        self = cls(config)
+        return {self.name: self} if self.available else {}
+
+    def cli_prepare(self, parser, subparsers) -> None:
+        """
+        Hook to declare CLI arguments
+        Args:
+            parser: The ArgumentParser to attach top-level CLI arguments to
+            subparsers: The subparser to attached subcommands to
+        """
+        platform_parser = subparsers.add_parser(name='platform', help='Platform Commands')
+        platform_subparser = platform_parser.add_subparsers()
+        platform_list_parser = platform_subparser.add_parser('list', help='List platforms')
+        platform_list_parser.set_defaults(cmd=self.platform_list)
+
+        platform_instances_parser = platform_subparser.add_parser('instances', help='List instances')
+        platform_instances_parser.set_defaults(cmd=self.platform_instances)
+
+    def cli_assess(self, args: argparse.Namespace) -> None:
+        """
+        Hook to parse CLI arguments
+        Args:
+            args: The namespace containing the parsed CLI arguments
+        """
+        pass
+
+    def platform_list(self, runtime, args: argparse.Namespace) -> int:
+        output = OutputEntry(title='Platforms',
+                             columns=['Name', 'Description', 'Available'],
+                             msg=[[name, pf.description, str(pf.available)] for name, pf in self.platforms().items()])
+        runtime.output.print(output)
+        return 0
+
+    def platform_instances(self, runtime, args: argparse.Namespace) -> int:
+        self.platforms()
+        i = self.instances()
+        return 0
+
+    def platforms(self) -> typing.Dict[str, 'Platform']:
+        if self._platforms is None:
+            self._platforms = dict()
+            for pf in Platform.__subclasses__():
+                self._platforms.update(pf.factory(self._config))
+        return self._platforms
+
+    def instances(self):
+        if self._platforms is None:
+            return {}
+        if self._instances is None:
+            self._instances = dict()
+            for pf in self._platforms.values():
+                self._instances.update(pf.instances())
+        return self._instances
+
+    @abc.abstractmethod
+    def apply(self, blueprint: Blueprint):
+        pass
 
     @property
-    def runtime(self) -> 'Runtime':
-        return self._runtime
+    def name(self) -> str:
+        return self._name
 
     @property
-    def executable_name(self) -> str:
-        return self._executable_name
+    def description(self) -> str:
+        return self._description
 
     @property
-    def executable(self):
-        return self._executable
-
-    @property
+    @abc.abstractmethod
     def available(self):
         """
         Determine whether the platform is available. This ideally occurs with some caching and is done only once.
@@ -77,39 +134,25 @@ class WaterPlatform(WaterExtension):
         """
         return self._available
 
-    def cli_prepare(self, parser) -> None:
-        """
-        Hook to declare CLI arguments
-        Args:
-            parser: The ArgumentParser to attach CLI arguments to
-        """
-        pass
 
-    def cli_assess(self, args: Namespace) -> None:
-        """
-        Hook to parse CLI arguments
-        Args:
-            args: The namespace containing the parsed CLI arguments
-        """
-        pass
 
-    @abc.abstractmethod
-    def instance_create(self, blueprint_instance: BlueprintInstance):
-        pass
+    # @abc.abstractmethod
+    # def instance_create(self, blueprint_instance: BlueprintInstance):
+    #     pass
+    #
+    # @abc.abstractmethod
+    # def instance_list(self, blueprint: typing.Optional[Blueprint] = None) -> typing.List[BlueprintInstance]:
+    #     pass
+    #
+    # @abc.abstractmethod
+    # def instance_show(self, name: str, blueprint: typing.Optional[Blueprint] = None):
+    #     pass
+    #
+    # @abc.abstractmethod
+    # def instance_remove(self, blueprint_instance: BlueprintInstance):
+    #     pass
 
-    @abc.abstractmethod
-    def instance_list(self, blueprint: Optional[Blueprint] = None) -> List[BlueprintInstance]:
-        pass
-
-    @abc.abstractmethod
-    def instance_show(self, name: str, blueprint: Optional[Blueprint] = None):
-        pass
-
-    @abc.abstractmethod
-    def instance_remove(self, blueprint_instance: BlueprintInstance):
-        pass
-
-    def execute(self, args: List[str]) -> subprocess.CompletedProcess:
+    def execute(self, args: typing.List[str]) -> subprocess.CompletedProcess:
         """
         Execute the platform command with the provided parameters
         Args:

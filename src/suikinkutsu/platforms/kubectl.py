@@ -20,47 +20,59 @@
 #  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 #  SOFTWARE.
 
-from typing import Optional, Dict, List
+import typing
 import json
 import shutil
 
+from .platform import Platform
+from suikinkutsu.config import Configuration
 from suikinkutsu import MurkyWaterException
-from .platform import WaterPlatform
 from suikinkutsu.blueprints import BlueprintInstance, Blueprint
 
 
-class Kubectl(WaterPlatform):
+class Kubectl(Platform):
     """
     Kubernetes platform
     """
 
-    def __init__(self, runtime: 'Runtime', context: Optional[str] = None):
-        super().__init__(runtime)
-        self._name = context or 'kubectl'
+    def __init__(self, config: Configuration, name: typing.Optional[str] = 'kubernetes'):
+        super().__init__(config)
+        self._name = name
         self._description = 'Kubernetes Context'
         self._executable_name = 'kubectl'
         self._executable = shutil.which(self._executable_name)
         self._available = None
 
     @classmethod
-    def factory(cls, runtime: 'Runtime') -> Dict[str, 'WaterPlatform']:
-        self = cls(runtime)
+    def factory(cls, config: Configuration) -> typing.Dict[str, 'Platform']:
+        self = cls(config)
         if not self._executable:
-            self.runtime.output.info(f'{self._name} executable not found. Platform is not available')
+            #self.runtime.output.info(f'{self._name} executable not found. Platform is not available')
             self._available = False
             return {}
         try:
-            config = self.execute(['config', 'view', '-o', 'json'])
-            config_json = json.loads(config.stdout)
+            kubeconfig = self.execute(['config', 'view', '-o', 'json'])
+            config_json = json.loads(kubeconfig.stdout)
             contexts = config_json.get('contexts', [])
             kube_contexts = {}
             for context in contexts:
                 context_name = context.get('name')
-                kube_contexts[context_name] = cls(runtime, context_name)
+                kube_contexts[context_name] = cls(config, context_name)
             return kube_contexts
         except MurkyWaterException as mwe:
-            self.runtime.output.warning(f'{self._name} executable was found but is not available: {mwe.msg}')
+            #self.runtime.output.warning(f'{self._name} executable was found but is not available: {mwe.msg}')
             self._available = False
+
+    def apply(self, blueprint: Blueprint):
+        pass
+
+    @property
+    def executable_name(self) -> str:
+        return self._executable_name
+
+    @property
+    def executable(self):
+        return self._executable
 
     @property
     def available(self):
@@ -79,13 +91,13 @@ class Kubectl(WaterPlatform):
     def instance_create(self, blueprint_instance: BlueprintInstance):
         pass
 
-    def instance_list(self, blueprint: Optional[Blueprint] = None) -> List[BlueprintInstance]:
+    def instance_list(self, blueprint: typing.Optional[Blueprint] = None) -> typing.List[BlueprintInstance]:
         # TODO
         return []
 
-    def instance_show(self, name: str, blueprint: Optional[Blueprint] = None):
+    def instance_show(self, name: str, blueprint: typing.Optional[Blueprint] = None):
         pass
 
-    def instance_remove(self, name: str, blueprint: Optional[Blueprint] = None):
+    def instance_remove(self, name: str, blueprint: typing.Optional[Blueprint] = None):
         pass
 

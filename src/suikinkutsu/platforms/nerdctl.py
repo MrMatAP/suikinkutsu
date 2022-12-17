@@ -20,28 +20,46 @@
 #  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 #  SOFTWARE.
 
-from typing import List, Optional
+import typing
 import json
 import shutil
 
-from .docker import Docker
+from .platform import Platform
+from suikinkutsu.config import Configuration
+from suikinkutsu.exceptions import MurkyWaterException
 from suikinkutsu.blueprints import Blueprint, BlueprintInstance, BlueprintVolume
 from suikinkutsu.constants import LABEL_BLUEPRINT, LABEL_CREATED_BY
 
 
-class Nerdctl(Docker):
+class Nerdctl(Platform):
     """
     Nerdctl platform as a client for containerd, such as by Rancher Desktop
     """
 
-    def __init__(self, runtime: 'Runtime'):
-        super().__init__(runtime)
+    def __init__(self, config: Configuration):
+        super().__init__(config)
         self._name = 'nerdctl'
         self._description = 'nerdctl is a modern CLI for a containerd implementation, brought to you via ' \
                             'Rancher Desktop (for example).'
+
         self._executable_name = 'nerdctl'
         self._executable = shutil.which(self._executable_name)
         self._available = None
+
+    def instances(self):
+        result = self.execute(['container', 'ls', '-q'])
+        return result
+
+    def apply(self, blueprint: Blueprint):
+        pass
+
+    @property
+    def executable_name(self) -> str:
+        return self._executable_name
+
+    @property
+    def executable(self):
+        return self._executable
 
     @property
     def available(self):
@@ -60,8 +78,8 @@ class Nerdctl(Docker):
     #
     # nerdctl features a --mode=native which in some ways may be more detailed but for what we parse it's currently
     # easier to use the same method as Docker. Particularly the mounts are easier to parse.
-    def instance_list(self, blueprint: Optional[Blueprint] = None) -> List[BlueprintInstance]:
-        platform_instances: List[BlueprintInstance] = []
+    def instance_list(self, blueprint: typing.Optional[Blueprint] = None) -> typing.List[BlueprintInstance]:
+        platform_instances: typing.List[BlueprintInstance] = []
         if not self.available:
             return platform_instances
         result = self.execute(['container', 'ls', '--all', '--quiet'])

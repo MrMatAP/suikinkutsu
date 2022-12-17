@@ -20,7 +20,7 @@
 #  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 #  SOFTWARE.
 
-from .platform import WaterPlatform
+from .platform import Platform
 from .docker import Docker
 from .nerdctl import Nerdctl
 from .kubectl import Kubectl
