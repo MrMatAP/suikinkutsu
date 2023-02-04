@@ -38,7 +38,7 @@ class Kafka(Blueprint):
         self._name = 'kafka'
         self._description = 'Apache Kafka'
         self._image = 'confluentinc/cp-kafka'
-        self._version = '7.2.1'
+        self._version = '7.3.1'
         self._volume_bindings = [
             VolumeBinding(name='kafka_etcvol', mount_point='/etc/kafka/secrets'),
             VolumeBinding(name='kafka_datavol', mount_point='/var/lib/kafka/data')

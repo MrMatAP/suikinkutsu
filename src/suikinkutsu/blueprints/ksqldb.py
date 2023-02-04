@@ -38,7 +38,7 @@ class KSQLDB(Blueprint):
         self._name = 'ksqldb'
         self._description = 'KSQLDB on top of Kafka'
         self._image = 'confluentinc/ksqldb-server'
-        self._version = '0.27.2'
+        self._version = '0.28.2'
         self._volume_bindings = []
         self._environment = {
             'KSQL_LISTENERS': 'http://0.0.0.0:8088',

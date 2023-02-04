@@ -42,7 +42,7 @@ class PostgreSQL(Blueprint):
         self._description = 'PostgreSQL is a modern relational database'
 
         self._image = 'postgres'
-        self._version = '14.5'
+        self._version = '14'
         self._volume_bindings = [
             VolumeBinding(name='pg_datavol', mount_point='/var/lib/postgresql/data')
         ]

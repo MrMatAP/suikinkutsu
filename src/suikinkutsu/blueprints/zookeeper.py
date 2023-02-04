@@ -38,7 +38,7 @@ class Zookeeper(Blueprint):
         self._name = 'zookeeper'
         self._description = 'Zookeeper'
         self._image = 'confluentinc/cp-zookeeper'
-        self._version = '7.2.1'
+        self._version = '7.3.1'
         self._volume_bindings = [
             VolumeBinding(name='zk_etcvol', mount_point='/etc/zookeeper/secrets'),
             VolumeBinding(name='zk_datavol', mount_point='/var/lib/zookeeper/data'),

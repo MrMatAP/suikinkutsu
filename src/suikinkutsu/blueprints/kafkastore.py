@@ -38,7 +38,7 @@ class KafkaStore(Blueprint):
         self._name = 'kafkastore'
         self._description = 'Schema Registry Store for Apache Kafka'
         self._image = 'confluentinc/cp-schema-registry'
-        self._version = '5.4.9'
+        self._version = '7.3.1'
         self._volume_bindings = [
             VolumeBinding(name='kafkastore_etcvol', mount_point='/etc/schema-registry/secrets')
         ]
