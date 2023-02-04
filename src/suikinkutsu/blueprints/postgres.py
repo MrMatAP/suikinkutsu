@@ -26,9 +26,8 @@ import psycopg2
 from psycopg2 import sql
 
 from suikinkutsu.config import Configuration
-from suikinkutsu.schema import BlueprintSchema
+from suikinkutsu.models import PortBinding, VolumeBinding
 from suikinkutsu.exceptions import MurkyWaterException
-from suikinkutsu.constants import LABEL_BLUEPRINT, LABEL_CREATED_BY
 from .blueprint import Blueprint, BlueprintInstance
 
 
@@ -36,27 +35,25 @@ class PostgreSQL(Blueprint):
     """
     PostgreSQL blueprint
     """
-    _defaults: BlueprintSchema = BlueprintSchema(
-        image='postgres:14.5',
-        volumes={'pg_datavol': '/var/lib/postgresql/data'},
-        environment={
-            'POSTGRES_DB': 'localdb',
-            'POSTGRES_PASSWORD': secrets.token_urlsafe(16),
-            'PGDATA': '/var/lib/postgresql/data/pgdata'
-        },
-        ports={'5432': '5432'},
-        labels={
-            LABEL_BLUEPRINT: 'postgres',
-            LABEL_CREATED_BY: 'suikinkutsu'
-        },
-        depends_on=[]
-    )
 
     def __init__(self, config: Configuration):
         super().__init__(config)
-        self._config = config
-        self._name = 'postgres'
+        self._name = 'pg'
         self._description = 'PostgreSQL is a modern relational database'
+
+        self._image = 'postgres'
+        self._version = '14.5'
+        self._volume_bindings = [
+            VolumeBinding(name='pg_datavol', mount_point='/var/lib/postgresql/data')
+        ]
+        self._environment = dict(
+            POSTGRES_DB='localdb',
+            POSTGRES_PASSWORD=secrets.token_urlsafe(16),
+            PGDATA='/var/lib/postgresql/data/pgdata')
+        self._port_bindings = [
+            PortBinding(container_port=5432, host_ip='127.0.0.1', host_port=5432, protocol='tcp')
+        ]
+        self._depends_on = []
 
     def cli_prepare(self, parser, subparsers):
         pg_parser = subparsers.add_parser(name='pg', help='PostgreSQL Commands')
@@ -157,6 +154,7 @@ class PostgreSQL(Blueprint):
         pg_restore_parser.set_defaults(cmd=self.pg_restore)
 
     def pg_create(self, runtime, args: argparse.Namespace):
+        pass
         blueprint_instance = BlueprintInstance(name=args.name,
                                                platform=self.runtime.platform,
                                                blueprint=self)
@@ -181,7 +179,9 @@ class PostgreSQL(Blueprint):
 
     def _pg_conn(self, instance_name: str):
         """
-        Obtain an administrative connection to the PostgreSQL instance. You currently must close the connection yourself.
+        Obtain an administrative connection to the PostgreSQL instance. You currently must close the connection
+        yourself.
+
         Args:
             instance_name: Name of the PostgreSQL instance to connect to
 

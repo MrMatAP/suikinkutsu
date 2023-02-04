@@ -59,7 +59,7 @@ class Kubectl(Platform):
                 context_name = context.get('name')
                 kube_contexts[context_name] = cls(config, context_name)
             return kube_contexts
-        except MurkyWaterException as mwe:
+        except MurkyWaterException:
             #self.runtime.output.warning(f'{self._name} executable was found but is not available: {mwe.msg}')
             self._available = False
 

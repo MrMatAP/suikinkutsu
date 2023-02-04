@@ -23,38 +23,34 @@
 import argparse
 
 from suikinkutsu.config import Configuration
-from suikinkutsu.schema import BlueprintSchema
-from suikinkutsu.constants import LABEL_BLUEPRINT, LABEL_CREATED_BY
+from suikinkutsu.models import VolumeBinding, PortBinding
 from .blueprint import Blueprint, BlueprintInstance
 
 
 class KafkaStore(Blueprint):
     """
-    Kafka blueprint
+    Kafka store blueprint
     """
-    _defaults: BlueprintSchema = BlueprintSchema(
-        image='confluentinc/cp-schema-registry:5.4.9',
-        volumes={
-            'kafkastore_etcvol': '/etc/schema-registry/secrets'
-        },
-        environment={
-            'SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS': 'kafka:9092',
-            'SCHEMA_REGISTRY_KAFKASTORE_LISTENERS': 'http://0.0.0.0:8081',
-            'SCHEMA_REGISTRY_HOST_NAME': 'kafkastore'
-        },
-        ports={'8081': '8081'},
-        labels={
-            LABEL_BLUEPRINT: 'kafkastore',
-            LABEL_CREATED_BY: 'suikinkutsu'
-        },
-        depends_on=['kafka']
-    )
 
     def __init__(self, config: Configuration):
         super().__init__(config)
         self._config = config
         self._name = 'kafkastore'
         self._description = 'Schema Registry Store for Apache Kafka'
+        self._image = 'confluentinc/cp-schema-registry'
+        self._version = '5.4.9'
+        self._volume_bindings = [
+            VolumeBinding(name='kafkastore_etcvol', mount_point='/etc/schema-registry/secrets')
+        ]
+        self._environment = {
+            'SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS': 'kafka:9092',
+            'SCHEMA_REGISTRY_KAFKASTORE_LISTENERS': 'http://0.0.0.0:8081',
+            'SCHEMA_REGISTRY_HOST_NAME': 'kafkastore'
+        }
+        self._port_bindings = [
+            PortBinding(host_port=8081, container_port=8081, host_ip='127.0.0.1', protocol='tcp')
+        ]
+        self._depends_on = ['kafka']
 
     def cli_prepare(self, parser, subparsers):
         kafkastore_parser = subparsers.add_parser(name='kafkastore', help='KafkaStore Commands')

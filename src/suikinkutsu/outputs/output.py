@@ -27,10 +27,13 @@ import enum
 
 
 class OutputSeverity(enum.Enum):
-    DEBUG = "DEBUG"
-    INFO = "INFO"
-    WARNING = "WARNING"
-    ERROR = "ERROR"
+    """
+    Severity of the output to print
+    """
+    DEBUG = 'DEBUG'
+    INFO = 'INFO'
+    WARNING = 'WARNING'
+    ERROR = 'ERROR'
 
     def __str__(self):
         return self.value

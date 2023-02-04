@@ -24,21 +24,24 @@ import argparse
 import secrets
 
 from suikinkutsu.config import Configuration
-from suikinkutsu.schema import BlueprintSchema
+from suikinkutsu.models import VolumeBinding, PortBinding
 from suikinkutsu.blueprints.blueprint import Blueprint, BlueprintInstance
-from suikinkutsu.constants import LABEL_BLUEPRINT, LABEL_CREATED_BY
 
 
 class Keycloak(Blueprint):
     """
     Keycloak Blueprint
     """
-    name: str = 'keycloak'
-    description: str = 'Keycloak is an Identity Provider implementing OAuth 2 and SAML authentication/authorisation'
-    _defaults: BlueprintSchema = BlueprintSchema(
-        image='jboss/keycloak:16.1.1',
-        volumes={'kc_importvol': '/import'},
-        environment={
+
+    def __init__(self, config: Configuration):
+        super().__init__(config)
+        self._config = config
+        self._name = 'keycloak'
+        self._description = 'Keycloak is an Identity Provider implementing OAuth 2 and ' \
+                            'SAML authentication/authorisation'
+        self._image = 'jboss/keycloak'
+        self._version = '16.1.1'
+        self._environment = {
             # 'DB_VENDOR': 'postgres',
             # 'DB_ADDR': 'pg',
             # 'DB_DATABASE': 'localdb',
@@ -47,20 +50,14 @@ class Keycloak(Blueprint):
             # 'DB_SCHEMA': 'keycloak',
             'KEYCLOAK_USER': 'admin',
             'KEYCLOAK_PASSWORD': secrets.token_urlsafe(16)
-        },
-        ports={'127.0.0.1:8080': '8080'},
-        labels={
-            LABEL_BLUEPRINT: 'keycloak',
-            LABEL_CREATED_BY: 'suikinkutsu'
-        },
-        depends_on=[]
-    )
-
-    def __init__(self, config: Configuration):
-        super().__init__(config)
-        self._config = config
-        self._name = 'keycloak'
-        self._description = 'Keycloak is an Identity Provider implementing OAuth 2 and SAML authentication/authorisation'
+        }
+        self._volume_bindings = [
+            VolumeBinding(name='kc_importvol', mount_point='/import')
+        ]
+        self._port_bindings = [
+            PortBinding(container_port=8080, host_ip='127.0.0.1', host_port=8080, protocol='tcp')
+        ]
+        self._depends_on = []
 
     def cli_prepare(self, parser, subparsers):
         kc_parser = subparsers.add_parser(name='kc', help='Keycloak Commands')
@@ -88,13 +85,13 @@ class Keycloak(Blueprint):
         runtime_secrets = self.runtime.secrets
         if args.name not in runtime_secrets:
             runtime_secrets[args.name] = {
-                'connection': f'http://localhost:8080',
+                'connection': 'http://localhost:8080',
                 'accounts': {
                     'admin': self.environment.get('KEYCLOAK_PASSWORD')
                 }
             }
         else:
-            runtime_secrets[args.name]['connection'] = f'http://localhost:8080'
+            runtime_secrets[args.name]['connection'] = 'http://localhost:8080'
             runtime_secrets[args.name]['admin'] = self.environment.get('KEYCLOAK_PASSWORD')
         self.runtime.secrets = runtime_secrets
 

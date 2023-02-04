@@ -14,44 +14,21 @@
 #
 #  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 #  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-#  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+#  FITNESS FOR A PARTICULAR PURPOSE AND NON INFRINGEMENT. IN NO EVENT SHALL THE
 #  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 #  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 #  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 #  SOFTWARE.
 
-import yaml
+from suikinkutsu.config import Configuration
+from suikinkutsu.platforms.docker import Docker
+from suikinkutsu.blueprints import PostgreSQL
 
-from . import OutputEntry
-from .output import Output
 
-
-class YAMLWaterOutput(Output):
-    """
-    YAML output
-    """
-    name = 'yaml'
-
-    def print(self, entry: OutputEntry) -> None:
-        if isinstance(entry.msg, str):
-            print(yaml.safe_dump(entry.__dict__()))
-            return
-
-        # TODO: We must reorder this
-        d = entry.__dict__()
-        d['msg'] = dict(zip(entry.columns, entry.msg))
-        del d['columns']
-        print(yaml.safe_dump(d))
-
-    def exception(self, ex: Exception):
-        ex_dict = self._exception_dict(ex)
-        print(yaml.safe_dump(ex_dict))
-
-    def info(self, msg: str):
-        print(yaml.safe_dump({'INFO': msg}))
-
-    def warning(self, msg: str):
-        print(yaml.safe_dump({'WARNING': msg}))
-
-    def error(self, msg: str):
-        print(yaml.safe_dump({'ERROR': msg}))
+def test_docker_postgres():
+    config = Configuration()
+    docker = Docker(config)
+    pg = PostgreSQL(config)
+    pg_instance = docker.apply(pg)
+    instance_ids = [i.instance_id for i in docker.instances()]
+    assert pg_instance.instance_id in instance_ids

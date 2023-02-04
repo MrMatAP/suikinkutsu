@@ -19,33 +19,32 @@
 #  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 #  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 #  SOFTWARE.
-import abc
+
+import typing
 import argparse
 from collections import OrderedDict
 from typing import Optional, List
 
 from suikinkutsu.config import Configuration
 from suikinkutsu.outputs import OutputEntry
-from suikinkutsu.schema import BlueprintSchema
-from suikinkutsu.constants import LABEL_BLUEPRINT
 
 
 class Blueprint:
-
-    _defaults: BlueprintSchema = BlueprintSchema(
-        image='',
-        volumes={},
-        environment={},
-        ports={},
-        labels={LABEL_BLUEPRINT: 'Blueprint'},
-        depends_on=[]
-    )
+    """
+    Blueprint base class
+    """
 
     def __init__(self, config: Configuration):
         self._config = config
 
         self._name = 'base'
         self._description = 'An abstract base blueprint'
+        self._image = None
+        self._version = None
+        self._volume_bindings = []
+        self._environment = {}
+        self._port_bindings = []
+        self._depends_on = []
 
     def cli_prepare(self, parser, subparsers) -> None:
         """
@@ -58,6 +57,8 @@ class Blueprint:
         blueprint_subparsers = blueprint_parser.add_subparsers()
         blueprint_list_parser = blueprint_subparsers.add_parser('list', help='List available blueprints')
         blueprint_list_parser.set_defaults(cmd=self.blueprint_list)
+        blueprint_pull_parser = blueprint_subparsers.add_parser('pull', help='Pull all blueprint container images')
+        blueprint_pull_parser.set_defaults(cmd=self.blueprint_pull)
 
     def cli_assess(self, args: argparse.Namespace) -> None:
         """
@@ -74,6 +75,9 @@ class Blueprint:
         runtime.output.print(output)
         return 0
 
+    def blueprint_pull(self, runtime, args: argparse.Namespace) -> int:
+        pass
+
     def blueprints(self):
         return [bp(self._config) for bp in Blueprint.__subclasses__()]
 
@@ -86,31 +90,38 @@ class Blueprint:
         return self._description
 
     @property
-    def image(self):
-        return self._schema.image
+    def image(self) -> str:
+        return self._image
 
     @property
-    def labels(self):
-        return self._schema.labels
+    def version(self) -> str:
+        return self._version
+
+    @version.setter
+    def version(self, value: str):
+        self._version = value
 
     @property
-    def volumes(self):
-        return self._schema.volumes
+    def volume_bindings(self) -> typing.List:
+        return self._volume_bindings
 
     @property
-    def environment(self):
-        return self._schema.environment
+    def environment(self) -> typing.Dict:
+        return self._environment
 
     @property
-    def ports(self):
-        return self._schema.ports
+    def port_bindings(self) -> typing.List:
+        return self._port_bindings
 
     @property
-    def depends_on(self):
-        return self._schema.depends_on
+    def depends_on(self) -> typing.List:
+        return self._depends_on
 
 
 class BlueprintVolume:
+    """
+    A blueprint volume
+    """
 
     def __init__(self, name: str, destination: str):
         self._name = name
@@ -126,6 +137,9 @@ class BlueprintVolume:
 
 
 class BlueprintInstance():
+    """
+    A blueprint instance
+    """
 
     def __init__(self,
                  name: str,
@@ -186,6 +200,9 @@ class BlueprintInstance():
 
 
 class BlueprintInstanceList(list):
+    """
+    A list of blueprint instances
+    """
 
     def __init__(self, blueprint_instances: List[Blueprint] = None):
         super().__init__()
@@ -200,7 +217,7 @@ class BlueprintInstanceList(list):
             'running': []
         })
         for blueprint_instance in self:
-            instances['id'].append(blueprint_instance.id)
+            instances['id'].append(blueprint_instance.instance_id)
             instances['name'].append(blueprint_instance.name)
             instances['platform'].append(blueprint_instance.platform.name if blueprint_instance.platform else 'Unknown')
             instances['blueprint'].append(

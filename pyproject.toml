@@ -26,7 +26,7 @@ classifiers = [
     "License :: OSI Approved :: MIT",
     "Programming Language :: Python :: 3.11"
 ]
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 dynamic = ["version"]
 dependencies = [
     "rich~=12.6.0",             # MIT
@@ -51,7 +51,7 @@ water = "suikinkutsu.cli:main"
 # in addopts
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "--cov=suikinkutsu --cov-report=term --cov-report=xml:build/coverage.xml --junit-xml=build/junit.xml --capture=tee-sys"
+#addopts = "--cov=suikinkutsu --cov-report=term --cov-report=xml:build/coverage.xml --junit-xml=build/junit.xml --capture=tee-sys"
 junit_family = "xunit2"
 log_cli = 1
 log_cli_level = "INFO"

@@ -21,7 +21,7 @@
 #  SOFTWARE.
 
 from typing import Optional, Dict, List
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 
 class BlueprintSchema(BaseModel):

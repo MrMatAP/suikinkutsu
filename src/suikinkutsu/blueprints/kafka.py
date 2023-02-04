@@ -23,8 +23,7 @@
 import argparse
 
 from suikinkutsu.config import Configuration
-from suikinkutsu.schema import BlueprintSchema
-from suikinkutsu.constants import LABEL_BLUEPRINT, LABEL_CREATED_BY
+from suikinkutsu.models import VolumeBinding, PortBinding
 from .blueprint import Blueprint, BlueprintInstance
 
 
@@ -33,13 +32,18 @@ class Kafka(Blueprint):
     Kafka blueprint
     """
 
-    _defaults: BlueprintSchema = BlueprintSchema(
-        image='confluentinc/cp-kafka:7.2.1',
-        volumes={
-            'kafka_etcvol': '/etc/kafka/secrets',
-            'kafka_datavol': '/var/lib/kafka/data'
-        },
-        environment={
+    def __init__(self, config: Configuration):
+        super().__init__(config)
+        self._config = config
+        self._name = 'kafka'
+        self._description = 'Apache Kafka'
+        self._image = 'confluentinc/cp-kafka'
+        self._version = '7.2.1'
+        self._volume_bindings = [
+            VolumeBinding(name='kafka_etcvol', mount_point='/etc/kafka/secrets'),
+            VolumeBinding(name='kafka_datavol', mount_point='/var/lib/kafka/data')
+        ]
+        self._environment = {
             'KAFKA_ZOOKEEPER_CONNECT': 'zk:32181',
             'KAFKA_LISTENER_SECURITY_PROTOCOL_MAP': 'PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT',
             'KAFKA_ADVERTISED_LISTENERS': 'PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092',
@@ -47,22 +51,11 @@ class Kafka(Blueprint):
             'KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS': 0,
             'KAFKA_TRANSACTION_STATE_LOG_MIN_ISR': 1,
             'KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR': 1
-        },
-        ports={
-            '29092': '29092'
-        },
-        labels={
-            LABEL_BLUEPRINT: 'kafka',
-            LABEL_CREATED_BY: 'suikinkutsu'
-        },
-        depends_on=['zk']
-    )
-
-    def __init__(self, config: Configuration):
-        super().__init__(config)
-        self._config = config
-        self._name = 'kafka'
-        self._description = 'Apache Kafka'
+        }
+        self._port_bindings = [
+            PortBinding(container_port=29092, host_ip='127.0.0.1', host_port=29092, protocol='tcp')
+        ]
+        self._depends_on = ['zk']
 
     def cli_prepare(self, parser, subparsers):
         kafka_parser = subparsers.add_parser(name='kafka', help='Kafka Commands')

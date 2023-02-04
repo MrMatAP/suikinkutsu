@@ -23,38 +23,36 @@
 import argparse
 
 from suikinkutsu.config import Configuration
-from suikinkutsu.schema import BlueprintSchema
-from suikinkutsu.constants import LABEL_BLUEPRINT, LABEL_CREATED_BY
+from suikinkutsu.models import PortBinding, VolumeBinding
 from .blueprint import Blueprint, BlueprintInstance
 
 
 class Zookeeper(Blueprint):
-    _defaults: BlueprintSchema = BlueprintSchema(
-        image='confluentinc/cp-zookeeper:7.2.1',
-        volumes={
-            'zk_etcvol': '/etc/zookeeper/secrets',
-            'zk_datavol': '/var/lib/zookeeper/data',
-            'zk_logvol': '/var/lib/zookeeper/log'
-        },
-        environment={
-            'ZOOKEEPER_CLIENT_PORT': 32181,
-            'ZOOKEEPER_TICK_TIME': 2000,
-            'ZOOKEEPER_SYNC_LIMIT': 2,
-            'ZOOKEEPER_SERVER_ID': 1
-        },
-        ports={'32181': '32181'},
-        labels={
-            LABEL_BLUEPRINT: 'zookeeper',
-            LABEL_CREATED_BY: 'suikinkutsu'
-        },
-        depends_on=[]
-    )
+    """
+    A Zookeeper Blueprint
+    """
 
     def __init__(self, config: Configuration):
         super().__init__(config)
         self._config = config
         self._name = 'zookeeper'
         self._description = 'Zookeeper'
+        self._image = 'confluentinc/cp-zookeeper'
+        self._version = '7.2.1'
+        self._volume_bindings = [
+            VolumeBinding(name='zk_etcvol', mount_point='/etc/zookeeper/secrets'),
+            VolumeBinding(name='zk_datavol', mount_point='/var/lib/zookeeper/data'),
+            VolumeBinding(name='zk_logvol', mount_point='/var/lib/zookeeper/log')
+        ]
+        self._environment = {
+            'ZOOKEEPER_CLIENT_PORT': 32181,
+            'ZOOKEEPER_TICK_TIME': 2000,
+            'ZOOKEEPER_SYNC_LIMIT': 2,
+            'ZOOKEEPER_SERVER_ID': 1
+        }
+        self._port_bindings = [
+            PortBinding(container_port=32181, host_ip='127.0.0.1', host_port=32181, protocol='tcp')
+        ]
 
     def cli_prepare(self, parser, subparsers):
         zk_parser = subparsers.add_parser(name='zk', help='Zookeeper Commands')

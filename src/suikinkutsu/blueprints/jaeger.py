@@ -23,8 +23,7 @@
 import argparse
 
 from suikinkutsu.config import Configuration
-from suikinkutsu.schema import BlueprintSchema
-from suikinkutsu.constants import LABEL_BLUEPRINT, LABEL_CREATED_BY
+from suikinkutsu.models import VolumeBinding, PortBinding
 from suikinkutsu.blueprints.blueprint import Blueprint, BlueprintInstance
 
 
@@ -32,39 +31,34 @@ class Jaeger(Blueprint):
     """
     Jaeger blueprint
     """
-    _defaults: BlueprintSchema = BlueprintSchema(
-        image='jaegertracing/all-in-one:1.35',
-        volumes={
-            'jaeger_tmpvol': '/tmp'
-        },
-        environment={
-            'COLLECTOR_ZIPKIN_HOST_PORT': ':9411',
-            'COLLECTOR_OLTP_ENABLED': 'true'
-        },
-        ports={
-            '6831': '6831/udp',
-            '6832': '8632/udp',
-            '5778': '5778',
-            '16686': '16686',
-            '4317': '4317',
-            '4318': '4318',
-            '14250': '14250',
-            '14268': '14268',
-            '14269': '14269',
-            '9411': '9411'
-        },
-        labels={
-            LABEL_BLUEPRINT: 'jaeger',
-            LABEL_CREATED_BY: 'suikinkutsu'
-        },
-        depends_on=[]
-    )
 
     def __init__(self, config: Configuration):
         super().__init__(config)
         self._config = config
         self._name = 'jaeger'
         self._description = 'Jaeger Tracing'
+
+        self._image = 'jaegertracing/all-in-one'
+        self._version = '1.41'
+        self._volume_bindings = [
+            VolumeBinding(name='jaeger_tmpvol', mount_point='/tmp')
+        ]
+        self._environment = dict(
+            COLLECTOR_ZIPKIN_HOST_PORT=':9411',
+            COLLECTOR_OLTP_ENABLED='true'
+        )
+        self._port_bindings = [
+            PortBinding(container_port=6831, host_port=6831, host_ip='127.0.0.1', protocol='udp'),
+            PortBinding(container_port=6832, host_port=6832, host_ip='127.0.0.1', protocol='udp'),
+            PortBinding(container_port=5778, host_port=5778, host_ip='127.0.0.1', protocol='tcp'),
+            PortBinding(container_port=16686, host_port=16686, host_ip='127.0.0.1', protocol='tcp'),
+            PortBinding(container_port=4317, host_port=4317, host_ip='127.0.0.1', protocol='tcp'),
+            PortBinding(container_port=4318, host_port=4318, host_ip='127.0.0.1', protocol='tcp'),
+            PortBinding(container_port=14250, host_port=14250, host_ip='127.0.0.1', protocol='tcp'),
+            PortBinding(container_port=14268, host_port=14268, host_ip='127.0.0.1', protocol='tcp'),
+            PortBinding(container_port=14269, host_port=14269, host_ip='127.0.0.1', protocol='tcp'),
+            PortBinding(container_port=9411, host_port=9411, host_ip='127.0.0.1', protocol='tcp')
+        ]
 
     def cli_prepare(self, parser, subparsers) -> None:
         jaeger_parser = subparsers.add_parser(name='jaeger', help='Jaeger Commands')

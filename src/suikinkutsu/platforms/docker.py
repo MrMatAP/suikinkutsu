@@ -20,14 +20,16 @@
 #  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 #  SOFTWARE.
 
+import sys
 import typing
 import json
 import shutil
 
-from suikinkutsu import MurkyWaterException
+from suikinkutsu.exceptions import MurkyWaterException, UnparseableInstanceException
 from .platform import Platform
+from suikinkutsu.models import Instance, PortBinding, VolumeBinding
 from suikinkutsu.config import Configuration
-from suikinkutsu.blueprints import Blueprint, BlueprintInstance, BlueprintVolume
+from suikinkutsu.blueprints import Blueprint, BlueprintInstance
 from suikinkutsu.constants import LABEL_BLUEPRINT, LABEL_CREATED_BY
 
 
@@ -45,8 +47,60 @@ class Docker(Platform):
         self._executable = shutil.which(self._executable_name)
         self._available = None
 
-    def apply(self, blueprint: Blueprint):
-        pass
+    def apply(self, blueprint: Blueprint) -> Instance:
+        cmd = ['container', 'run', '-d', '--name', blueprint.name]
+        cmd.extend(['--label', f'{LABEL_CREATED_BY}=suikinkutsu'])
+        cmd.extend(['--label', f'{LABEL_BLUEPRINT}={blueprint.__class__.__name__}'])
+        for key, value in blueprint.environment.items():
+            cmd.extend(['-e', f'{key}={value}'])
+        for vol in blueprint.volume_bindings:
+            # TODO: ro/rw
+            cmd.extend(['--mount', f'type=volume,source={vol.name},destination={vol.mount_point}'])
+        for port_binding in blueprint.port_bindings:
+            cmd.extend(['-p', port_binding.to_mapping()])
+        cmd.extend(['--hostname', blueprint.name])
+        if len(blueprint.depends_on) > 0:
+            cmd.extend(['--link', ','.join(blueprint.depends_on)])
+        cmd.append(f'{blueprint.image}:{blueprint.version}')
+        result = self.execute(cmd)
+        instance = Instance(instance_id=result.stdout.strip('\n'),
+                            name=blueprint.name,
+                            running=True)
+        instance.blueprint = blueprint
+        instance.port_bindings = blueprint.port_bindings
+        instance.volume_bindings = blueprint.volume_bindings
+        return instance
+
+    def instances(self) -> typing.List[Instance]:
+        if not self.available:
+            return []
+        result = self.execute(['container', 'ls', '--all', '--quiet'])
+        container_ids = [container_id for container_id in result.stdout.split('\n') if container_id != '']
+        if len(container_ids) == 0:
+            return []
+        cmd = ['container', 'inspect']
+        cmd.extend(container_ids)
+        result = self.execute(cmd)
+        raw_instances = json.loads(result.stdout)
+        filtered_instances = [i for i in raw_instances if i.get('Config', {}).get('Labels', {}).get(LABEL_CREATED_BY)]
+        instances = []
+        for i in filtered_instances:
+            instance = Instance(instance_id=i['Id'],
+                                name=i.get('Name', 'Unknown').strip('/'),
+                                running=i.get('State', {}).get('Running'))
+            instance_blueprint = i.get('Config', {}).get('Labels', {}).get(LABEL_BLUEPRINT, 'Unknown')
+            try:
+                blueprint_clz = getattr(sys.modules['suikinkutsu.blueprints'], instance_blueprint)
+                instance.blueprint = blueprint_clz(self._config)
+            except AttributeError as ae:
+                raise UnparseableInstanceException(code=500, msg=f'Unable to find corresponding blueprint for '
+                                                                 f'"{instance_blueprint}') from ae
+            instance.port_bindings = [PortBinding.from_mapping(c, h) for c, h in
+                                      i.get('NetworkSettings', {}).get('Ports', {}).items()]
+            instance.volume_bindings = [VolumeBinding(mount['Name'], mount['Destination']) for mount in
+                                        i.get('Mounts', [])]
+            instances.append(instance)
+        return instances
 
     @property
     def executable_name(self) -> str:
@@ -70,57 +124,6 @@ class Docker(Platform):
             self._available = False
         return self._available
 
-    def instance_create(self, blueprint_instance: BlueprintInstance):
-        cmd = ['container', 'run', '-d', '--name', blueprint_instance.name]
-        for label, value in blueprint_instance.blueprint.labels.items():
-            cmd.extend(['--label', f'{label}={value}'])
-        for key, value in blueprint_instance.blueprint.environment.items():
-            cmd.extend(['-e', f'{key}={value}'])
-        for src, dst in blueprint_instance.blueprint.volumes.items():
-            # TODO: ro/rw
-            cmd.extend(['--mount', f'type=volume,source={src},destination={dst}'])
-        for host, container in blueprint_instance.blueprint.ports.items():
-            cmd.extend(['-p', f'{host}:{container}'])
-        cmd.extend(['--hostname', blueprint_instance.name])
-        if len(blueprint_instance.blueprint.depends_on) > 0:
-            cmd.extend(['--link', ','.join(blueprint_instance.blueprint.depends_on)])
-        cmd.append(blueprint_instance.blueprint.image)
-        result = self.execute(cmd)
-        blueprint_instance.id = result.stdout.strip()
-        blueprint_instance.running = True
-
-    def instance_list(self, blueprint: typing.Optional[Blueprint] = None) -> typing.List[BlueprintInstance]:
-        platform_instances: typing.List[BlueprintInstance] = []
-        if not self.available:
-            return platform_instances
-        result = self.execute(['container', 'ls', '--all', '--quiet'])
-        container_ids = [container_id for container_id in result.stdout.split('\n') if container_id != '']
-        if len(container_ids) == 0:
-            return platform_instances
-        cmd = ['container', 'inspect']
-        cmd.extend(container_ids)
-        result = self.execute(cmd)
-        raw_instances = json.loads(result.stdout)
-        for raw_instance in raw_instances:
-            if not raw_instance.get('Config', {}).get('Labels', {}).get(LABEL_CREATED_BY):
-                continue
-            blueprint_label = raw_instance.get('Config', {}).get('Labels', {}).get(LABEL_BLUEPRINT)
-            instance_name = raw_instance.get('Name', 'Unknown').strip('/')
-            volumes = []
-            for mount in raw_instance.get('Mounts', []):
-                if mount['Type'] != 'volume':
-                    continue
-                volumes.append(BlueprintVolume(name=mount['Name'],
-                                               destination=mount['Destination']))
-            instance = BlueprintInstance(name=instance_name,
-                                         platform=self,
-                                         volumes=volumes,
-                                         blueprint=self.runtime.blueprints.get(blueprint_label))
-            instance.id = raw_instance['Id']
-            instance.running = raw_instance.get('State', {}).get('Running')
-            platform_instances.append(instance)
-        return platform_instances
-
     def instance_show(self, name: str, blueprint: typing.Optional[Blueprint] = None):
         # result = self.execute(['container', 'inspect', blueprint.name])
         pass
@@ -128,4 +131,5 @@ class Docker(Platform):
     def instance_remove(self, blueprint_instance: BlueprintInstance):
         self.execute(['container', 'stop', blueprint_instance.name])
         self.execute(['container', 'rm', blueprint_instance.name])
-        [self.execute(['volume', 'rm', vol.name]) for vol in blueprint_instance.volumes]
+        for vol in blueprint_instance.volumes:
+            self.execute(['volume', 'rm', vol.name])

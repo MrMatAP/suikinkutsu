@@ -20,18 +20,13 @@
 #  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 #  SOFTWARE.
 
-import os
-import pathlib
-
 import json
-from typing import List, Dict, Optional, Any, Type
+from typing import List, Dict, Optional, Any
 from argparse import ArgumentParser, Namespace
 
-import suikinkutsu.constants
-from .config import ConfigurableItem, Source, Configuration
 from suikinkutsu.exceptions import MurkyWaterException
 from suikinkutsu.outputs import Output, HumanWaterOutput
-from suikinkutsu.blueprints import Blueprint, BlueprintInstance, BlueprintInstanceList
+from suikinkutsu.blueprints import Blueprint, BlueprintInstance
 from suikinkutsu.platforms import Platform
 from suikinkutsu.config import Configuration
 

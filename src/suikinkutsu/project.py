@@ -26,6 +26,9 @@ from suikinkutsu.config import Configuration
 
 
 class Project(object):
+    """
+    A project
+    """
 
     def __init__(self, config: Configuration):
         self._config = config

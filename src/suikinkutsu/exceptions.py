@@ -32,3 +32,6 @@ class MurkyWaterException(Exception):
 
     def __repr__(self):
         return f'[{self.code}] {self.msg}'
+
+class UnparseableInstanceException(MurkyWaterException):
+    pass

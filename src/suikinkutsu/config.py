@@ -29,7 +29,7 @@ import collections
 import pydantic
 
 import suikinkutsu.constants
-from suikinkutsu.outputs import OutputEntry, HumanWaterOutput
+from suikinkutsu.outputs import OutputEntry
 
 
 class WaterConfiguration(pydantic.BaseModel):
@@ -140,6 +140,9 @@ class ConfigurableItem(object):
 
 
 class Configuration(object):
+    """
+    Configuration
+    """
 
     def __init__(self):
         self._config_file = ConfigurableItem(

@@ -29,11 +29,14 @@ import argparse
 
 from suikinkutsu import MurkyWaterException
 from suikinkutsu.config import Configuration
-from suikinkutsu.blueprints import Blueprint, BlueprintInstance
+from suikinkutsu.blueprints import Blueprint
 from suikinkutsu.outputs import OutputEntry
 
 
 class Platform:
+    """
+    A platform to host blueprints on
+    """
 
     def __init__(self, config: Configuration):
         self._config = config
@@ -93,12 +96,12 @@ class Platform:
 
     def platform_instances(self, runtime, args: argparse.Namespace) -> int:
         self.platforms()
-        i = self.instances()
+        self.instances()
         return 0
 
     def platforms(self) -> typing.Dict[str, 'Platform']:
         if self._platforms is None:
-            self._platforms = dict()
+            self._platforms = {}
             for pf in Platform.__subclasses__():
                 self._platforms.update(pf.factory(self._config))
         return self._platforms
@@ -107,7 +110,7 @@ class Platform:
         if self._platforms is None:
             return {}
         if self._instances is None:
-            self._instances = dict()
+            self._instances = {}
             for pf in self._platforms.values():
                 self._instances.update(pf.instances())
         return self._instances

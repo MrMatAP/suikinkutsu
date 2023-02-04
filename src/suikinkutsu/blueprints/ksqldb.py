@@ -23,8 +23,7 @@
 import argparse
 
 from suikinkutsu.config import Configuration
-from suikinkutsu.schema import BlueprintSchema
-from suikinkutsu.constants import LABEL_BLUEPRINT, LABEL_CREATED_BY
+from suikinkutsu.models import PortBinding
 from .blueprint import Blueprint, BlueprintInstance
 
 
@@ -32,28 +31,25 @@ class KSQLDB(Blueprint):
     """
     Kafka blueprint
     """
-    _defaults: BlueprintSchema = BlueprintSchema(
-        image='confluentinc/ksqldb-server:0.27.2',
-        volumes={},
-        environment={
-            'KSQL_LISTENERS': 'http://0.0.0.0:8088',
-            'KSQL_BOOTSTRAP_SERVERS': 'kafka:9092',
-            'KSQL_KSQL_LOGGING_PROCESSING_STREAM_AUTO_CREATE': 'true',
-            'KSQL_KSQL_LOGGING_PROCESSING_TOPIC_AUTO_CREATE': 'true'
-        },
-        ports={'8088': '8088'},
-        labels={
-            LABEL_BLUEPRINT: 'ksqldb',
-            LABEL_CREATED_BY: 'suikinkutsu'
-        },
-        depends_on=['kafka']
-    )
 
     def __init__(self, config: Configuration):
         super().__init__(config)
         self._config = config
         self._name = 'ksqldb'
         self._description = 'KSQLDB on top of Kafka'
+        self._image = 'confluentinc/ksqldb-server'
+        self._version = '0.27.2'
+        self._volume_bindings = []
+        self._environment = {
+            'KSQL_LISTENERS': 'http://0.0.0.0:8088',
+            'KSQL_BOOTSTRAP_SERVERS': 'kafka:9092',
+            'KSQL_KSQL_LOGGING_PROCESSING_STREAM_AUTO_CREATE': 'true',
+            'KSQL_KSQL_LOGGING_PROCESSING_TOPIC_AUTO_CREATE': 'true'
+        }
+        self._port_bindings = [
+            PortBinding(container_port=8088, host_ip='127.0.0.1', host_port=8088, protocol='tcp')
+        ]
+        self._depends_on = ['kafka']
 
     def cli_prepare(self, parser, subparsers):
         ksqldb_parser = subparsers.add_parser(name='ksqldb', help='KSQLDB Commands')

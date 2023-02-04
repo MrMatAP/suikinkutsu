@@ -41,7 +41,7 @@ class HumanWaterOutput(Output):
         self._console = Console()
 
     def print(self, entry: OutputEntry):
-        if type(entry.msg) == str:
+        if isinstance(entry.msg, str):
             self._console.print(HumanWaterOutput._severity(entry.severity, f'* [{entry.code}] {entry.msg}'))
             return
 
@@ -85,23 +85,27 @@ class HumanWaterOutput(Output):
         for blueprint in runtime.recipe.blueprints.values():
             node = tree.add(blueprint.name)
             node.add(Columns(['[bold]Kind:[/bold]', blueprint.kind], width=80))
-            # node.add(Columns(['[bold]Platform:[/bold]'], blueprint.platform))
             node.add(Columns(['[bold]Image:[/bold]', blueprint.image], width=80))
 
             labels_node = node.add('[bold]Labels:[/bold]')
-            [labels_node.add(Columns([f'[bold]{k}:[/bold]', v], width=80)) for k, v in blueprint.labels.items()]
+            for k, v in blueprint.labels.items():
+                labels_node.add(Columns([f'[bold]{k}:[/bold]', v], width=80))
 
             volumes_node = node.add('[bold]Volumes:[/bold]')
-            [volumes_node.add(Columns([f'[bold]{k}:[/bold]', v], width=80)) for k, v in blueprint.volumes.items()]
+            for k, v in blueprint.volume_bindings.items():
+                volumes_node.add(Columns([f'[bold]{k}:[/bold]', v], width=80))
 
             env_node = node.add('[bold]Environment:[/bold]')
-            [env_node.add(Columns([f'[bold]{k}:[/bold]', v], width=80)) for k, v in blueprint.environment.items()]
+            for k, v in blueprint.environment.items():
+                env_node.add(Columns([f'[bold]{k}:[/bold]', v], width=80))
 
             ports_node = node.add('[bold]Ports:[/bold]')
-            [ports_node.add(Columns([f'[bold]{k}:[/bold]', v], width=80)) for k, v in blueprint.ports.items()]
+            for k, v in blueprint.port_bindings.items():
+                ports_node.add(Columns([f'[bold]{k}:[/bold]', v], width=80))
 
             depends_on_node = node.add('[bold]Depends on:[/bold]')
-            [depends_on_node.add(Columns(['[bold]Blueprint:[/bold]', v], width=80)) for v in blueprint.depends_on]
+            for v in blueprint.depends_on:
+                depends_on_node.add(Columns(['[bold]Blueprint:[/bold]', v], width=80))
         self._console.print(tree)
 
     def __repr__(self):
