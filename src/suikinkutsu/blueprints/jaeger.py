@@ -32,10 +32,11 @@ class Jaeger(Blueprint):
     Jaeger blueprint
     """
 
+    name = 'jaeger'
+
     def __init__(self, config: Configuration):
         super().__init__(config)
         self._config = config
-        self._name = 'jaeger'
         self._description = 'Jaeger Tracing'
 
         self._image = 'jaegertracing/all-in-one'
@@ -82,14 +83,14 @@ class Jaeger(Blueprint):
                                                platform=runtime.platform,
                                                blueprint=self)
         self.runtime.instance_create(blueprint_instance)
-        runtime_secrets = self.runtime.secrets
+        runtime_secrets = self.runtime.secreta
         if args.name not in runtime_secrets:
             runtime_secrets[args.name] = {
                 'connection': f'{args.name}:16686'
             }
         else:
             runtime_secrets[args.name]['connection'] = f'{args.name}:16686'
-        self.runtime.secrets = runtime_secrets
+        self.runtime.secreta = runtime_secrets
 
     def jaeger_remove(self, runtime, args: argparse.Namespace):
         blueprint_instance = self.runtime.instance_get(name=args.name, blueprint=self)

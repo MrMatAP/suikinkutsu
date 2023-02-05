@@ -101,3 +101,6 @@ class Kubectl(Platform):
     def instance_remove(self, name: str, blueprint: typing.Optional[Blueprint] = None):
         pass
 
+    @property
+    def name(self) -> str:
+        return self._name

@@ -32,6 +32,10 @@ class JSONWaterOutput(Output):
     """
     name = 'json'
 
+    def __init__(self, config) -> None:
+        super().__init__(config)
+        self._description = 'Output in JSON'
+
     def print(self, entry: OutputEntry) -> None:
         if isinstance(entry.msg, str):
             print(json.dumps(entry.__dict__()))

@@ -36,8 +36,9 @@ class HumanWaterOutput(Output):
 
     name = 'human'
 
-    def __init__(self, runtime = None):
-        super().__init__()
+    def __init__(self, config):
+        super().__init__(config)
+        self._description = 'Output for humans'
         self._console = Console()
 
     def print(self, entry: OutputEntry):

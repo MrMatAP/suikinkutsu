@@ -32,10 +32,11 @@ class KSQLDB(Blueprint):
     Kafka blueprint
     """
 
+    name = 'ksqldb'
+
     def __init__(self, config: Configuration):
         super().__init__(config)
         self._config = config
-        self._name = 'ksqldb'
         self._description = 'KSQLDB on top of Kafka'
         self._image = 'confluentinc/ksqldb-server'
         self._version = '0.28.2'
@@ -74,14 +75,14 @@ class KSQLDB(Blueprint):
                                                platform=self.runtime.platform,
                                                blueprint=self)
         self.runtime.instance_create(blueprint_instance)
-        runtime_secrets = self.runtime.secrets
+        runtime_secrets = self.runtime.secreta
         if args.name not in runtime_secrets:
             runtime_secrets[args.name] = {
                 'connection': f'{args.name}:8088'
             }
         else:
             runtime_secrets[args.name]['connection'] = f'{args.name}:8088'
-        self.runtime.secrets = runtime_secrets
+        self.runtime.secreta = runtime_secrets
 
     def ksqldb_remove(self, runtime, args: argparse.Namespace):
         blueprint_instance = self.runtime.instance_get(name=args.name, blueprint=self)

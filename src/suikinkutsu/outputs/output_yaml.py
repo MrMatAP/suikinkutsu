@@ -32,6 +32,10 @@ class YAMLWaterOutput(Output):
     """
     name = 'yaml'
 
+    def __init__(self, config) -> None:
+        super().__init__(config)
+        self._description = 'Output in YAML'
+
     def print(self, entry: OutputEntry) -> None:
         if isinstance(entry.msg, str):
             print(yaml.safe_dump(entry.__dict__()))

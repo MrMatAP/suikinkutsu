@@ -26,11 +26,12 @@ import argparse
 
 from suikinkutsu import __version__, MurkyWaterException
 from suikinkutsu.config import Configuration
+from suikinkutsu.secreta import Secreta
+from suikinkutsu.outputs import OutputEntry, Output
 from suikinkutsu.blueprints import Blueprint
 from suikinkutsu.platforms import Platform
 from suikinkutsu.project import Project
 from suikinkutsu.runtime import Runtime
-from suikinkutsu.outputs import OutputEntry
 
 
 def instance_list(runtime: Runtime, args: argparse.Namespace) -> int:
@@ -116,24 +117,32 @@ def main() -> int:
     try:
         config = Configuration()
         config.cli_prepare(parser, subparsers)
+        secreta = Secreta(config)
+        secreta.cli_prepare(parser, subparsers)
+        output = Output(config)
+        output.cli_prepare(parser, subparsers)
         blueprint = Blueprint(config)
         blueprint.cli_prepare(parser, subparsers)
         platform = Platform(config)
         platform.cli_prepare(parser, subparsers)
         project = Project(config)
         project.cli_prepare(parser, subparsers)
-        runtime = Runtime(config)
+        runtime = Runtime(config, secreta)
         for blueprint in blueprint.blueprints():
             blueprint.cli_prepare(parser, subparsers)
-        runtime.cli_prepare(parser)
+        runtime.cli_prepare(parser, subparsers)
 
         args = parser.parse_args()
         config.cli_assess(args)
-        project.cli_assess(args)
+        secreta.cli_assess(args)
+        output.cli_assess(args)
         runtime.cli_assess(args)
-        for blueprint in runtime.blueprints.values():
+
+        for blueprint in blueprint.blueprints():
             blueprint.cli_assess(args)
         platform.cli_assess(args)
+        project.cli_assess(args)
+
 
         # Execute the desired command
         if hasattr(args, 'cmd'):

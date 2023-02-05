@@ -34,10 +34,11 @@ class Blueprint:
     Blueprint base class
     """
 
+    name = 'base'
+
     def __init__(self, config: Configuration):
         self._config = config
 
-        self._name = 'base'
         self._description = 'An abstract base blueprint'
         self._image = None
         self._version = None
@@ -71,19 +72,17 @@ class Blueprint:
     def blueprint_list(self, runtime, args: argparse.Namespace) -> int:
         output = OutputEntry(title='Blueprints',
                              columns=['Name', 'Description'],
-                             msg=[[bp.name, bp.description] for bp in self.blueprints()])
+                             msg=[[bp.name, bp.description] for bp in runtime.blueprints.values()])
         runtime.output.print(output)
         return 0
 
     def blueprint_pull(self, runtime, args: argparse.Namespace) -> int:
-        pass
+        for bp in runtime.blueprints.values():
+            runtime.output.info(f'Pulling {bp.image}:{bp.version}')
+            runtime.platform.execute(['pull', f'{bp.image}:{bp.version}'])
 
     def blueprints(self):
         return [bp(self._config) for bp in Blueprint.__subclasses__()]
-
-    @property
-    def name(self):
-        return self._name
 
     @property
     def description(self):

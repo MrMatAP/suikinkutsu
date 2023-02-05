@@ -29,7 +29,7 @@ import argparse
 
 from suikinkutsu import MurkyWaterException
 from suikinkutsu.config import Configuration
-from suikinkutsu.blueprints import Blueprint
+from suikinkutsu.blueprints import Blueprint, BlueprintInstance
 from suikinkutsu.outputs import OutputEntry
 
 
@@ -41,13 +41,13 @@ class Platform:
     def __init__(self, config: Configuration):
         self._config = config
 
-        self._name: str = 'base'
         self._description: str = 'Abstract base for a platform'
         self._executable_name: str = None
         self._executable_path: pathlib.Path = None
         self._executable = None
         self._available = False
         self._platforms = None
+        self._platform = None
         self._instances = None
 
     @classmethod
@@ -90,21 +90,13 @@ class Platform:
     def platform_list(self, runtime, args: argparse.Namespace) -> int:
         output = OutputEntry(title='Platforms',
                              columns=['Name', 'Description', 'Available'],
-                             msg=[[name, pf.description, str(pf.available)] for name, pf in self.platforms().items()])
+                             msg=[[pf.name, pf.description, str(pf.available)] for name, pf in runtime.platforms.items()])
         runtime.output.print(output)
         return 0
 
     def platform_instances(self, runtime, args: argparse.Namespace) -> int:
-        self.platforms()
         self.instances()
         return 0
-
-    def platforms(self) -> typing.Dict[str, 'Platform']:
-        if self._platforms is None:
-            self._platforms = {}
-            for pf in Platform.__subclasses__():
-                self._platforms.update(pf.factory(self._config))
-        return self._platforms
 
     def instances(self):
         if self._platforms is None:
@@ -137,6 +129,9 @@ class Platform:
         """
         return self._available
 
+    @abc.abstractmethod
+    def instance_create(self, instance: BlueprintInstance):
+        pass
 
 
     # @abc.abstractmethod

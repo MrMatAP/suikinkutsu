@@ -24,6 +24,7 @@ import abc
 import dataclasses
 import typing
 import enum
+import argparse
 
 
 class OutputSeverity(enum.Enum):
@@ -70,16 +71,46 @@ class OutputEntry:
 
 class Output(abc.ABC):
     """
-    Abstract base class for output
+    Output base class
     """
 
-    name = 'abstract'
+    name = 'base'
 
-    # TODO: We accept, but do not use the runtime since all extensions are initialised the same way
-    def __init__(self, runtime = None) -> None:
-        super().__init__()
+    def __init__(self, config) -> None:
+        self._config = config
+        self._description = 'Abstract base for an output'
 
-    @abc.abstractmethod
+    def cli_prepare(self, parser, subparsers) -> None:
+        """
+        Hook to declare CLI arguments
+        Args:
+            parser: The ArgumentParser to attach top-level CLI arguments to
+            subparsers: The subparser to attached subcommands to
+        """
+        output_parser = subparsers.add_parser(name='output', help='Output Commands')
+        output_subparser = output_parser.add_subparsers()
+        output_list_parser = output_subparser.add_parser('list', help='List Outputs')
+        output_list_parser.set_defaults(cmd=self.output_list)
+
+    def cli_assess(self, args: argparse.Namespace) -> None:
+        """
+        Hook to parse CLI arguments
+        Args:
+            args: The namespace containing the parsed CLI arguments
+        """
+        pass
+
+    def output_list(self, runtime, args: argparse.Namespace) -> int:
+        output = OutputEntry(title='Outputs',
+                             columns=['Name', 'Description'],
+                             msg=[[name, output.description] for name, output in runtime.outputs.items()])
+        runtime.output.print(output)
+        return 0
+
+    @property
+    def description(self) -> str:
+        return self._description
+
     def print(self, entry: OutputEntry) -> None:
         """
         Display a log entry in the chosen output format
@@ -88,7 +119,6 @@ class Output(abc.ABC):
         """
         pass
 
-    @abc.abstractmethod
     def exception(self, ex: Exception) -> None:
         """
         Display an exception
@@ -97,7 +127,6 @@ class Output(abc.ABC):
         """
         pass
 
-    @abc.abstractmethod
     def info(self, msg: str) -> None:
         """
         Display an informational message
@@ -106,7 +135,6 @@ class Output(abc.ABC):
         """
         pass
 
-    @abc.abstractmethod
     def warning(self, msg: str) -> None:
         """
         Display a warning message
@@ -115,7 +143,6 @@ class Output(abc.ABC):
         """
         pass
 
-    @abc.abstractmethod
     def error(self, msg: str) -> None:
         """
         Display an error message
@@ -145,16 +172,6 @@ class Output(abc.ABC):
             'recipe-file': str(runtime.recipe_file),
             'recipe-file-source': runtime.recipe_file_source.value
         }
-
-    @staticmethod
-    def _platform_list(runtime):
-        return [
-            {
-                'name': platform.name,
-                'available': platform.available(),
-                'description': platform.description
-            }
-            for platform in runtime.available_platforms]
 
     def __repr__(self):
         return 'Output()'

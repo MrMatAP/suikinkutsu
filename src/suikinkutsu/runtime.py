@@ -20,42 +20,90 @@
 #  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 #  SOFTWARE.
 
-import json
-from typing import List, Dict, Optional, Any
-from argparse import ArgumentParser, Namespace
+import typing
+import argparse
 
-from suikinkutsu.exceptions import MurkyWaterException
-from suikinkutsu.outputs import Output, HumanWaterOutput
+from suikinkutsu.outputs import Output
 from suikinkutsu.blueprints import Blueprint, BlueprintInstance
 from suikinkutsu.platforms import Platform
 from suikinkutsu.config import Configuration
+from suikinkutsu.secreta import Secreta
 
 
 class Runtime:
     """
-    The runtime of all platforms, blueprints and their instances
+    The runtime object holds all configured actor implementations together
     """
 
-    def __init__(self, config: Configuration):
+    def __init__(self, config: Configuration, secreta: Secreta):
         self._config = config
+        self._secreta = secreta
 
-        self._outputs: Dict[str, Output] = self._find_extensions(Output)
-        self._output = HumanWaterOutput()
+        self._outputs = {}
+        for output in Output.__subclasses__():
+            self._outputs[output.name] = output(self._config)
+        self._output = None
 
-        #self._platforms = self._find_extensions(WaterPlatform)
         self._platforms = {}
-        self._blueprints = self._find_extensions(Blueprint)
-        #self._blueprints = {}
-        self._instances: List[BlueprintInstance] = []
-        self._secrets = {}
+        for platform in Platform.__subclasses__():
+            self._platforms.update(platform.factory(self._config))
+        self._platform = None
 
-    def cli_prepare(self, parser: ArgumentParser):
+        self._blueprints = {}
+        for blueprint in Blueprint.__subclasses__():
+            self._blueprints[blueprint.name] = blueprint(self._config)
+
+        self._instances = {}
+
+
+        # #self._platforms = self._find_extensions(WaterPlatform)
+        # self._platforms = {}
+        # self._blueprints = self._find_extensions(Blueprint)
+        # #self._blueprints = {}
+        # self._instances: List[BlueprintInstance] = []
+        # self._secrets = {}
+
+    def cli_prepare(self, parser, subparsers):
         pass
 
-    def cli_assess(self, args: Namespace):
-        self._output = self._outputs.get(self.config.output.value)
-        #[self._instances.extend(platform.instance_list()) for platform in self.platforms.values()]
-        #self.secrets_load()
+    def cli_assess(self, args: argparse.Namespace):
+        if self._config.output.value not in self._outputs:
+            print(f'ERROR: Configured output {self._config.output.value} is not available')
+            return 1
+        self._output = self._outputs.get(self._config.output.value)
+
+        if self._config.platform.value not in self._platforms:
+            self._output.error(f'Configured platform {self._config.platform.value} is not available')
+            return 1
+        self._platform = self._platforms.get(self._config.platform.value)
+
+    @property
+    def config(self) -> Configuration:
+        return self._config
+
+    @property
+    def secreta(self) -> Secreta:
+        return self._secreta
+
+    @property
+    def outputs(self) -> typing.Dict[str, Output]:
+        return self._outputs
+
+    @property
+    def output(self) -> Output:
+        return self._output
+
+    @property
+    def platforms(self) -> typing.Dict[str, Platform]:
+        return self._platforms
+
+    @property
+    def platform(self) -> Platform:
+        return self._platform
+
+    @property
+    def blueprints(self) -> typing.Dict[str, Blueprint]:
+        return self._blueprints
 
     # def config_save(self):
     #     config = WaterConfiguration(config_dir=self.config_dir,
@@ -64,31 +112,14 @@ class Runtime:
     #     with open(self.config_file.value, 'w+', encoding='UTF-8') as c:
     #         json.dump(config.dict(), c, indent=2)
 
-    def secrets_load(self):
-        secrets_file = self.config.secrets_file.value
-        if secrets_file.exists():
-            self._secrets = json.loads(secrets_file.read_text(encoding='UTF-8'))
-
-    def secrets_save(self):
-        self.config.secrets_file.value.parent.mkdir(parents=True, exist_ok=True)
-        self.config.secrets_file.value.write_text(json.dumps(self.secrets, indent=2))
-
-    def instance_create(self, blueprint_instance: BlueprintInstance):
-        if self.instance_get(name=blueprint_instance.name,
-                             blueprint=blueprint_instance.blueprint,
-                             platform=blueprint_instance.platform):
-            self.output.error(f'An instance called {blueprint_instance.name} already exists on this platform')
-            return
-        blueprint_instance.platform.instance_create(blueprint_instance)
-        self._instances.append(blueprint_instance)
 
     def instance_remove(self, blueprint_instance: BlueprintInstance):
         blueprint_instance.platform.instance_remove(blueprint_instance)
         self._instances.remove(blueprint_instance)
 
     def instance_list(self,
-                      blueprint: Optional[Blueprint] = None,
-                      platform: Optional[Platform] = None) -> List[BlueprintInstance]:
+                      blueprint: typing.Optional[Blueprint] = None,
+                      platform: typing.Optional[Platform] = None) -> typing.List[BlueprintInstance]:
         instances = self._instances
         if platform:
             instances = list(filter(lambda _: _.platform == platform, instances))
@@ -98,8 +129,8 @@ class Runtime:
 
     def instance_get(self,
                      name: str,
-                     blueprint: Optional[Blueprint] = None,
-                     platform: Optional[Platform] = None) -> Optional[BlueprintInstance]:
+                     blueprint: typing.Optional[Blueprint] = None,
+                     platform: typing.Optional[Platform] = None) -> typing.Optional[BlueprintInstance]:
         instances = list(filter(lambda _: _.name == name,
                                 self.instance_list(blueprint, platform)))
         return instances[0] if len(instances) > 0 else None
@@ -121,42 +152,3 @@ class Runtime:
                 all_subclasses[subclass.name] = subclass(self)
             all_subclasses.update(self._find_extensions(subclass))
         return all_subclasses
-
-    @property
-    def config(self) -> Configuration:
-        return self._config
-
-    @property
-    def output(self):
-        return self._output
-
-    @output.setter
-    def output(self, value):
-        if value not in self.outputs:
-            raise MurkyWaterException(f'The desired output {value} is not available')
-        self._output = self._outputs.get(self.config.output.value)
-
-    @property
-    def outputs(self) -> Dict[str, Output]:
-        return self._outputs
-
-    @property
-    def platforms(self) -> Dict[str, Any]:
-        return self._platforms
-
-    @property
-    def blueprints(self) -> Dict[str, Any]:
-        return self._blueprints
-
-    @property
-    def instances(self) -> List[BlueprintInstance]:
-        return self._instances
-
-    @property
-    def secrets(self) -> Dict[str, Any]:
-        return self._secrets
-
-    @secrets.setter
-    def secrets(self, value: Dict[str, Any]):
-        self._secrets = value
-        self.secrets_save()

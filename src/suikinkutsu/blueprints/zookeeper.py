@@ -32,10 +32,11 @@ class Zookeeper(Blueprint):
     A Zookeeper Blueprint
     """
 
+    name = 'zk'
+
     def __init__(self, config: Configuration):
         super().__init__(config)
         self._config = config
-        self._name = 'zookeeper'
         self._description = 'Zookeeper'
         self._image = 'confluentinc/cp-zookeeper'
         self._version = '7.3.1'
@@ -76,14 +77,14 @@ class Zookeeper(Blueprint):
                                                platform=runtime.platform,
                                                blueprint=self)
         self.runtime.instance_create(blueprint_instance)
-        runtime_secrets = self.runtime.secrets
+        runtime_secrets = self.runtime.secreta
         if args.name not in runtime_secrets:
             runtime_secrets[args.name] = {
                 'connection': f'{args.name}:{self.environment.get("ZOOKEEPER_CLIENT_PORT")}'
             }
         else:
             runtime_secrets[args.name]['connection'] = f'{args.name}:{self.environment.get("ZOOKEEPER_CLIENT_PORT")}'
-        self.runtime.secrets = runtime_secrets
+        self.runtime.secreta = runtime_secrets
 
     def zookeeper_remove(self, runtime, args: argparse.Namespace):
         blueprint_instance = self.runtime.instance_get(name=args.name, blueprint=self)

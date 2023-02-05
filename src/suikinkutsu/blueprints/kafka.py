@@ -32,10 +32,11 @@ class Kafka(Blueprint):
     Kafka blueprint
     """
 
+    name = 'kafka'
+
     def __init__(self, config: Configuration):
         super().__init__(config)
         self._config = config
-        self._name = 'kafka'
         self._description = 'Apache Kafka'
         self._image = 'confluentinc/cp-kafka'
         self._version = '7.3.1'
@@ -80,14 +81,14 @@ class Kafka(Blueprint):
                                                platform=self.runtime.platform,
                                                blueprint=self)
         self.runtime.instance_create(blueprint_instance)
-        runtime_secrets = self.runtime.secrets
+        runtime_secrets = self.runtime.secreta
         if args.name not in runtime_secrets:
             runtime_secrets[args.name] = {
                 'connection': f'{args.name}:29092'
             }
         else:
             runtime_secrets[args.name]['connection'] = f'{args.name}:29092'
-        self.runtime.secrets = runtime_secrets
+        self.runtime.secreta = runtime_secrets
 
     def kafka_remove(self, runtime, args: argparse.Namespace):
         blueprint_instance = self.runtime.instance_get(name=args.name, blueprint=self)

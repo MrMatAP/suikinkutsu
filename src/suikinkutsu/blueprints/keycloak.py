@@ -33,10 +33,11 @@ class Keycloak(Blueprint):
     Keycloak Blueprint
     """
 
+    name = 'keycloak'
+
     def __init__(self, config: Configuration):
         super().__init__(config)
         self._config = config
-        self._name = 'keycloak'
         self._description = 'Keycloak is an Identity Provider implementing OAuth 2 and ' \
                             'SAML authentication/authorisation'
         self._image = 'jboss/keycloak'
@@ -82,7 +83,7 @@ class Keycloak(Blueprint):
                                                platform=self.runtime.platform,
                                                blueprint=self)
         self.runtime.instance_create(blueprint_instance)
-        runtime_secrets = self.runtime.secrets
+        runtime_secrets = self.runtime.secreta
         if args.name not in runtime_secrets:
             runtime_secrets[args.name] = {
                 'connection': 'http://localhost:8080',
@@ -93,7 +94,7 @@ class Keycloak(Blueprint):
         else:
             runtime_secrets[args.name]['connection'] = 'http://localhost:8080'
             runtime_secrets[args.name]['admin'] = self.environment.get('KEYCLOAK_PASSWORD')
-        self.runtime.secrets = runtime_secrets
+        self.runtime.secreta = runtime_secrets
 
     def kc_remove(self, runtime, args: argparse.Namespace):
         blueprint_instance = self.runtime.instance_get(name=args.name, blueprint=self)

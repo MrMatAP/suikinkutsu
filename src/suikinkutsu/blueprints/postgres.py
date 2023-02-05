@@ -21,7 +21,7 @@
 #  SOFTWARE.
 
 import argparse
-import secrets
+import secrets as generator
 import psycopg2
 from psycopg2 import sql
 
@@ -36,9 +36,10 @@ class PostgreSQL(Blueprint):
     PostgreSQL blueprint
     """
 
+    name = 'pg'
+
     def __init__(self, config: Configuration):
         super().__init__(config)
-        self._name = 'pg'
         self._description = 'PostgreSQL is a modern relational database'
 
         self._image = 'postgres'
@@ -48,7 +49,7 @@ class PostgreSQL(Blueprint):
         ]
         self._environment = dict(
             POSTGRES_DB='localdb',
-            POSTGRES_PASSWORD=secrets.token_urlsafe(16),
+            POSTGRES_PASSWORD=generator.token_urlsafe(16),
             PGDATA='/var/lib/postgresql/data/pgdata')
         self._port_bindings = [
             PortBinding(container_port=5432, host_ip='127.0.0.1', host_port=5432, protocol='tcp')
@@ -85,7 +86,7 @@ class PostgreSQL(Blueprint):
         pg_role_create_parser.add_argument('-p', '--role-password',
                                            dest='role_password',
                                            required=False,
-                                           default=secrets.token_urlsafe(16),
+                                           default=generator.token_urlsafe(16),
                                            help='Role password')
         pg_role_create_parser.add_argument('--create-schema',
                                            dest='create_schema',
@@ -154,53 +155,22 @@ class PostgreSQL(Blueprint):
         pg_restore_parser.set_defaults(cmd=self.pg_restore)
 
     def pg_create(self, runtime, args: argparse.Namespace):
-        pass
-        blueprint_instance = BlueprintInstance(name=args.name,
-                                               platform=self.runtime.platform,
-                                               blueprint=self)
-        self.runtime.instance_create(blueprint_instance)
-        runtime_secrets = self.runtime.secrets
-        if args.name not in runtime_secrets:
-            runtime_secrets[args.name] = {
+        runtime.platform.apply(self)
+        runtime.secreta.add(
+            args.name,
+            {
                 'connection': f'postgresql://localhost:5432/{self.environment.get("POSTGRES_DB")}',
                 'roles': {
                     'postgres': self.environment.get('POSTGRES_PASSWORD')
                 }
-            }
-        else:
-            runtime_secrets[args.name]['connection'] = f'postgresql://localhost:5432/' \
-                                                       f'{self.environment.get("POSTGRES_DB")}'
-            runtime_secrets[args.name]['roles']['postgres'] = self.environment.get('POSTGRES_PASSWORD')
-        self.runtime.secrets = runtime_secrets
+            })
 
     def pg_remove(self, runtime: 'Runtime', args: argparse.Namespace):
-        blueprint_instance = self.runtime.instance_get(name=args.name, blueprint=self)
-        self.runtime.instance_remove(blueprint_instance)
-
-    def _pg_conn(self, instance_name: str):
-        """
-        Obtain an administrative connection to the PostgreSQL instance. You currently must close the connection
-        yourself.
-
-        Args:
-            instance_name: Name of the PostgreSQL instance to connect to
-
-        Returns:
-            A DBAPI Connection object
-        """
-        instance_secrets = self.runtime.secrets.get(instance_name, {})
-        instance_connection = instance_secrets.get('connection')
-        if instance_connection is None:
-            raise MurkyWaterException(msg='Missing connection string for this instance in secrets')
-        instance_password = instance_secrets.get('roles', {}).get('postgres')
-        if instance_password is None:
-            raise MurkyWaterException(msg='Missing postgres password for this instance in secrets')
-        return psycopg2.connect(instance_connection,
-                                user='postgres',
-                                password=instance_password)
+        blueprint_instance = runtime.instance_get(name=args.name, blueprint=self)
+        runtime.instance_remove(blueprint_instance)
 
     def pg_role_create(self, runtime: 'Runtime', args: argparse.Namespace):
-        conn = self._pg_conn(args.name)
+        conn = self._pg_conn(runtime, args.name)
         cur = conn.cursor()
         query = sql.SQL('CREATE ROLE {} ENCRYPTED PASSWORD %s LOGIN').format(sql.Identifier(args.role_name))
         cur.execute(query, (args.role_password,))
@@ -214,11 +184,11 @@ class PostgreSQL(Blueprint):
         conn.commit()
         cur.close()
         conn.close()
-        self.runtime.secrets.get(args.name, {}).get('roles', {})[args.role_name] = args.role_password
-        self.runtime.secrets_save()
+        runtime.secreta.get(args.name, {}).get('roles', {})[args.role_name] = args.role_password
+        runtime.save()
 
     def pg_role_remove(self, runtime: 'Runtime', args: argparse.Namespace):
-        conn = self._pg_conn(args.name)
+        conn = self._pg_conn(runtime, args.name)
         cur = conn.cursor()
         if args.remove_schema:
             query = sql.SQL('DROP SCHEMA IF EXISTS {}').format(sql.Identifier(args.role_name))
@@ -228,14 +198,14 @@ class PostgreSQL(Blueprint):
         conn.commit()
         cur.close()
         conn.close()
-        if args.role_name in self.runtime.secrets.get(args.name, {}).get('roles'):
-            del self.runtime.secrets[args.name]['roles'][args.role_name]
-        self.runtime.secrets_save()
+        if args.role_name in runtime.secreta.get(args.name, {}).get('roles'):
+            del runtime.secreta[args.name]['roles'][args.role_name]
+        runtime.save()
 
     def pg_dumpall(self, runtime: 'Runtime', args: argparse.Namespace):
-        instance = self.runtime.instance_get(name=args.name, blueprint=self)
+        instance = runtime.instance_get(name=args.name, blueprint=self)
         if not instance:
-            self.runtime.output.error(f'There is no instance called {args.name}')
+            runtime.output.error(f'There is no instance called {args.name}')
             return
         result = instance.platform.execute(['exec', args.name,
                                             '/usr/local/bin/pg_dumpall', '-h', 'localhost', '-U', 'postgres'])
@@ -243,9 +213,9 @@ class PostgreSQL(Blueprint):
             d.write(result.stdout)
 
     def pg_dump(self, runtime: 'Runtime', args: argparse.Namespace):
-        instance = self.runtime.instance_get(name=args.name, blueprint=self)
+        instance = runtime.instance_get(name=args.name, blueprint=self)
         if not instance:
-            self.runtime.output.error(f'There is no instance called {args.name}')
+            runtime.output.error(f'There is no instance called {args.name}')
             return
         cmd = ['exec', args.name, '/usr/local/bin/pg_dump', '-h', 'localhost', '-U', 'postgres', '-n', args.schema]
         if hasattr(args, 'database'):
@@ -255,9 +225,9 @@ class PostgreSQL(Blueprint):
             d.write(result.stdout)
 
     def pg_restore(self, runtime: 'Runtime', args: argparse.Namespace):
-        instance = self.runtime.instance_get(name=args.name, blueprint=self)
+        instance = runtime.instance_get(name=args.name, blueprint=self)
         if not instance:
-            self.runtime.output.error(f'There is no instance called {args.name}')
+            runtime.output.error(f'There is no instance called {args.name}')
             return
         cmd = ['exec', args.name, '/usr/local/bin/pg_restore', '-h', 'localhost', '-U', 'postgres', '-n', args.schema]
         if hasattr(args, 'database'):
@@ -265,3 +235,26 @@ class PostgreSQL(Blueprint):
         result = instance.platform.execute(cmd)
         with open(args.dumpfile, 'wt+', encoding='UTF-8') as d:
             d.write(result.stdout)
+
+    def _pg_conn(self, runtime: 'Runtime', instance_name: str):
+        """
+        Obtain an administrative connection to the PostgreSQL instance. You currently must close the connection
+        yourself.
+
+        Args:
+            runtime: The runtime object
+            instance_name: Name of the PostgreSQL instance to connect to
+
+        Returns:
+            A DBAPI Connection object
+        """
+        instance_secrets = runtime.secreta.get(instance_name, {})
+        instance_connection = instance_secrets.get('connection')
+        if instance_connection is None:
+            raise MurkyWaterException(msg='Missing connection string for this instance in secrets')
+        instance_password = instance_secrets.get('roles', {}).get('postgres')
+        if instance_password is None:
+            raise MurkyWaterException(msg='Missing postgres password for this instance in secrets')
+        return psycopg2.connect(instance_connection,
+                                user='postgres',
+                                password=instance_password)
