@@ -125,7 +125,7 @@ class ConfigurableItem(object):
             file_value: The config file value
 
         Returns:
-            True if the config file has overriden this value, False otherwise
+            True if the config file has overridden this value, False otherwise
         """
         if self.source in [Source.CLI, Source.ENVIRONMENT]:
             return False
