@@ -34,7 +34,7 @@ DEFAULT_OUTPUT = 'human'
 ENV_OUTPUT = 'WATER_OUTPUT'
 CLI_OUTPUT = 'override_output'
 
-DEFAULT_PLATFORM = 'nerdctl'
+DEFAULT_PLATFORM = 'docker'
 ENV_PLATFORM = 'WATER_PLATFORM'
 CLI_PLATFORM = 'override_platform'
 
