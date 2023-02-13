@@ -22,7 +22,6 @@
 
 import argparse
 
-from suikinkutsu.config import Configuration
 from suikinkutsu.models import VolumeBinding, PortBinding
 from suikinkutsu.blueprints.blueprint import Blueprint, BlueprintInstance
 
@@ -34,9 +33,8 @@ class Jaeger(Blueprint):
 
     name = 'jaeger'
 
-    def __init__(self, config: Configuration):
-        super().__init__(config)
-        self._config = config
+    def __init__(self):
+        super().__init__()
         self._description = 'Jaeger Tracing'
 
         self._image = 'jaegertracing/all-in-one'
@@ -78,7 +76,7 @@ class Jaeger(Blueprint):
                                           required=True,
                                           help='Instance name')
 
-    def jaeger_create(self, runtime, args: argparse.Namespace):
+    def jaeger_create(self, runtime: 'Runtime', args: argparse.Namespace) -> int:
         blueprint_instance = BlueprintInstance(name=args.name,
                                                platform=runtime.platform,
                                                blueprint=self)
@@ -92,6 +90,6 @@ class Jaeger(Blueprint):
             runtime_secrets[args.name]['connection'] = f'{args.name}:16686'
         self.runtime.secreta = runtime_secrets
 
-    def jaeger_remove(self, runtime, args: argparse.Namespace):
+    def jaeger_remove(self, runtime: 'Runtime', args: argparse.Namespace) -> int:
         blueprint_instance = self.runtime.instance_get(name=args.name, blueprint=self)
         self.runtime.instance_remove(blueprint_instance)

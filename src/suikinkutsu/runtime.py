@@ -27,7 +27,7 @@ from suikinkutsu.outputs import Output
 from suikinkutsu.blueprints import Blueprint, BlueprintInstance
 from suikinkutsu.platforms import Platform
 from suikinkutsu.config import Configuration
-from suikinkutsu.secreta import Secreta
+from suikinkutsu.secretsfile import SecretsFile
 
 
 class Runtime:
@@ -35,9 +35,9 @@ class Runtime:
     The runtime object holds all configured actor implementations together
     """
 
-    def __init__(self, config: Configuration, secreta: Secreta):
+    def __init__(self, config: Configuration, secrets: SecretsFile):
         self._config = config
-        self._secreta = secreta
+        self._secreta = secrets
 
         self._outputs = {}
         for output in Output.__subclasses__():
@@ -54,14 +54,6 @@ class Runtime:
             self._blueprints[blueprint.name] = blueprint(self._config)
 
         self._instances = {}
-
-
-        # #self._platforms = self._find_extensions(WaterPlatform)
-        # self._platforms = {}
-        # self._blueprints = self._find_extensions(Blueprint)
-        # #self._blueprints = {}
-        # self._instances: List[BlueprintInstance] = []
-        # self._secrets = {}
 
     def cli_prepare(self, parser, subparsers):
         pass
@@ -82,7 +74,7 @@ class Runtime:
         return self._config
 
     @property
-    def secreta(self) -> Secreta:
+    def secreta(self) -> SecretsFile:
         return self._secreta
 
     @property
@@ -104,14 +96,6 @@ class Runtime:
     @property
     def blueprints(self) -> typing.Dict[str, Blueprint]:
         return self._blueprints
-
-    # def config_save(self):
-    #     config = WaterConfiguration(config_dir=self.config_dir,
-    #                                 default_output=self.output.name,
-    #                                 default_platform=self.platform.name)
-    #     with open(self.config_file.value, 'w+', encoding='UTF-8') as c:
-    #         json.dump(config.dict(), c, indent=2)
-
 
     def instance_remove(self, blueprint_instance: BlueprintInstance):
         blueprint_instance.platform.instance_remove(blueprint_instance)

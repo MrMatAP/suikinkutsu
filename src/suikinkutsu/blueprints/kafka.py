@@ -22,7 +22,6 @@
 
 import argparse
 
-from suikinkutsu.config import Configuration
 from suikinkutsu.models import VolumeBinding, PortBinding
 from .blueprint import Blueprint, BlueprintInstance
 
@@ -34,9 +33,8 @@ class Kafka(Blueprint):
 
     name = 'kafka'
 
-    def __init__(self, config: Configuration):
-        super().__init__(config)
-        self._config = config
+    def __init__(self):
+        super().__init__()
         self._description = 'Apache Kafka'
         self._image = 'confluentinc/cp-kafka'
         self._version = '7.3.1'
@@ -76,7 +74,7 @@ class Kafka(Blueprint):
                                          help='Instance name')
         kafka_remove_parser.set_defaults(cmd=self.kafka_remove)
 
-    def kafka_create(self, runtime, args: argparse.Namespace):
+    def kafka_create(self, runtime: 'Runtime', args: argparse.Namespace) -> int:
         blueprint_instance = BlueprintInstance(name=args.name,
                                                platform=self.runtime.platform,
                                                blueprint=self)
@@ -90,6 +88,6 @@ class Kafka(Blueprint):
             runtime_secrets[args.name]['connection'] = f'{args.name}:29092'
         self.runtime.secreta = runtime_secrets
 
-    def kafka_remove(self, runtime, args: argparse.Namespace):
+    def kafka_remove(self, runtime: 'Runtime', args: argparse.Namespace) -> int:
         blueprint_instance = self.runtime.instance_get(name=args.name, blueprint=self)
         self.runtime.instance_remove(blueprint_instance)

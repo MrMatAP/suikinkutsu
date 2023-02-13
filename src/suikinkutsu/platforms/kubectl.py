@@ -88,7 +88,7 @@ class Kubectl(Platform):
             self._available = False
         return self._available
 
-    def instance_create(self, blueprint_instance: BlueprintInstance):
+    def instance_create(self, instance: BlueprintInstance):
         pass
 
     def instance_list(self, blueprint: typing.Optional[Blueprint] = None) -> typing.List[BlueprintInstance]:

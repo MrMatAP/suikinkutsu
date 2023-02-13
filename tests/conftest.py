@@ -25,6 +25,7 @@ import os
 
 import pytest
 import suikinkutsu.constants
+from suikinkutsu.config import Configuration
 
 config_overrides = [(suikinkutsu.constants.ENV_CONFIG_FILE, suikinkutsu.constants.CLI_CONFIG_FILE, 'config_file'),
                     (suikinkutsu.constants.ENV_CONFIG_DIR, suikinkutsu.constants.CLI_CONFIG_DIR, 'config_dir'),
@@ -51,3 +52,8 @@ def config_env(tmp_path):
     for env_var in env_vars:
         if env_var in os.environ:
             del os.environ[env_var]
+
+
+@pytest.fixture()
+def config():
+    yield Configuration()

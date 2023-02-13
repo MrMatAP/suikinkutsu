@@ -22,7 +22,6 @@
 
 import argparse
 
-from suikinkutsu.config import Configuration
 from suikinkutsu.models import PortBinding, VolumeBinding
 from .blueprint import Blueprint, BlueprintInstance
 
@@ -34,9 +33,8 @@ class Zookeeper(Blueprint):
 
     name = 'zk'
 
-    def __init__(self, config: Configuration):
-        super().__init__(config)
-        self._config = config
+    def __init__(self):
+        super().__init__()
         self._description = 'Zookeeper'
         self._image = 'confluentinc/cp-zookeeper'
         self._version = '7.3.1'

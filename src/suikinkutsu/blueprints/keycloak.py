@@ -23,7 +23,6 @@
 import argparse
 import secrets
 
-from suikinkutsu.config import Configuration
 from suikinkutsu.models import VolumeBinding, PortBinding
 from suikinkutsu.blueprints.blueprint import Blueprint, BlueprintInstance
 
@@ -35,9 +34,8 @@ class Keycloak(Blueprint):
 
     name = 'keycloak'
 
-    def __init__(self, config: Configuration):
-        super().__init__(config)
-        self._config = config
+    def __init__(self):
+        super().__init__()
         self._description = 'Keycloak is an Identity Provider implementing OAuth 2 and ' \
                             'SAML authentication/authorisation'
         self._image = 'jboss/keycloak'

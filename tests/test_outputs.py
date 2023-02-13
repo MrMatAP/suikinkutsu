@@ -23,12 +23,13 @@
 import pytest
 import json
 import yaml
+
 from suikinkutsu.outputs import OutputSeverity, OutputEntry, HumanWaterOutput, JSONWaterOutput, YAMLWaterOutput
 
 
 @pytest.mark.parametrize('severity', list(OutputSeverity))
-def test_human_output_strings(severity: OutputSeverity, capsys):
-    output = HumanWaterOutput()
+def test_human_output_strings(severity: OutputSeverity, config, capsys):
+    output = HumanWaterOutput(config)
     entry = OutputEntry(msg=f'Message at severity {severity.value}', severity=severity, code=201)
     output.print(entry)
 
@@ -38,8 +39,8 @@ def test_human_output_strings(severity: OutputSeverity, capsys):
 
 
 @pytest.mark.parametrize('severity', list(OutputSeverity))
-def test_human_output_obj(severity: OutputSeverity, capsys):
-    output = HumanWaterOutput()
+def test_human_output_obj(severity: OutputSeverity, config, capsys):
+    output = HumanWaterOutput(config)
     entry = OutputEntry(msg=[['one', 'two'], ['four', 'five']],
                         columns=['col1', 'col2'],
                         title='Test',
@@ -57,8 +58,8 @@ def test_human_output_obj(severity: OutputSeverity, capsys):
 
 
 @pytest.mark.parametrize('severity', list(OutputSeverity))
-def test_json_output_strings(severity: OutputSeverity, capsys):
-    output = JSONWaterOutput()
+def test_json_output_strings(severity: OutputSeverity, config, capsys):
+    output = JSONWaterOutput(config)
     entry = OutputEntry(msg=f'Message at severity {severity.value}', severity=severity, code=201)
     output.print(entry)
 
@@ -72,8 +73,8 @@ def test_json_output_strings(severity: OutputSeverity, capsys):
 
 
 @pytest.mark.parametrize('severity', list(OutputSeverity))
-def test_json_output_obj(severity: OutputSeverity, capsys):
-    output = JSONWaterOutput()
+def test_json_output_obj(severity: OutputSeverity, config, capsys):
+    output = JSONWaterOutput(config)
     entry = OutputEntry(msg=[['one', 'two'], ['four', 'five']],
                         columns=['col1', 'col2'],
                         title='Test',
@@ -91,8 +92,8 @@ def test_json_output_obj(severity: OutputSeverity, capsys):
 
 
 @pytest.mark.parametrize('severity', list(OutputSeverity))
-def test_yaml_output_strings(severity: OutputSeverity, capsys):
-    output = YAMLWaterOutput()
+def test_yaml_output_strings(severity: OutputSeverity, config, capsys):
+    output = YAMLWaterOutput(config)
     entry = OutputEntry(msg=f'Message at severity {severity.value}', severity=severity, code=201)
     output.print(entry)
 
@@ -105,8 +106,8 @@ def test_yaml_output_strings(severity: OutputSeverity, capsys):
 
 
 @pytest.mark.parametrize('severity', list(OutputSeverity))
-def test_yaml_output_obj(severity: OutputSeverity, capsys):
-    output = JSONWaterOutput()
+def test_yaml_output_obj(severity: OutputSeverity, config, capsys):
+    output = JSONWaterOutput(config)
     entry = OutputEntry(msg=[['one', 'two'], ['four', 'five']],
                         columns=['col1', 'col2'],
                         title='Test',

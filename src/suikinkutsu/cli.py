@@ -26,7 +26,7 @@ import argparse
 
 from suikinkutsu import __version__, MurkyWaterException
 from suikinkutsu.config import Configuration
-from suikinkutsu.secreta import Secreta
+from suikinkutsu.secreta import SecretsFile
 from suikinkutsu.outputs import OutputEntry, Output
 from suikinkutsu.blueprints import Blueprint
 from suikinkutsu.platforms import Platform
@@ -51,7 +51,8 @@ def instance_list(runtime: Runtime, args: argparse.Namespace) -> int:
 
 def cook_up(runtime: Runtime, args: argparse.Namespace) -> int:
     try:
-        [blueprint.create(runtime, args) for blueprint in runtime.recipe.blueprints]
+        for blueprint in runtime.recipe.blueprints:
+            blueprint.create(runtime, args)
         return 0
         # with open(args.recipe, 'r', encoding='UTF-8') as r:
         #     raw_recipe = yaml.safe_load(r)
@@ -77,7 +78,8 @@ def cook_show(runtime: Runtime, args: argparse.Namespace) -> int:
 
 def cook_down(runtime: Runtime, args: argparse.Namespace) -> int:
     try:
-        [blueprint.remove(runtime, args) for blueprint in runtime.recipe.blueprints]
+        for blueprint in runtime.recipe.blueprints:
+            blueprint.remove(runtime, args)
         return 0
     except Exception:
         # console.print_exception()
@@ -117,11 +119,11 @@ def main() -> int:
     try:
         config = Configuration()
         config.cli_prepare(parser, subparsers)
-        secreta = Secreta(config)
+        secreta = SecretsFile(config)
         secreta.cli_prepare(parser, subparsers)
         output = Output(config)
         output.cli_prepare(parser, subparsers)
-        blueprint = Blueprint(config)
+        blueprint = Blueprint()
         blueprint.cli_prepare(parser, subparsers)
         platform = Platform(config)
         platform.cli_prepare(parser, subparsers)

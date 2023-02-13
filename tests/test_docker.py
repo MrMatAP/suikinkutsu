@@ -20,15 +20,14 @@
 #  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 #  SOFTWARE.
 
-from suikinkutsu.config import Configuration
 from suikinkutsu.platforms.docker import Docker
 from suikinkutsu.blueprints import PostgreSQL
 
 
-def test_docker_postgres():
-    config = Configuration()
+def test_docker_postgres(config):
     docker = Docker(config)
-    pg = PostgreSQL(config)
+    pg = PostgreSQL()
     pg_instance = docker.apply(pg)
     instance_ids = [i.instance_id for i in docker.instances()]
     assert pg_instance.instance_id in instance_ids
+    docker.instance_remove(pg_instance)

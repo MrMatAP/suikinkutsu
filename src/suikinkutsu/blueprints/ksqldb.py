@@ -22,7 +22,6 @@
 
 import argparse
 
-from suikinkutsu.config import Configuration
 from suikinkutsu.models import PortBinding
 from .blueprint import Blueprint, BlueprintInstance
 
@@ -34,9 +33,8 @@ class KSQLDB(Blueprint):
 
     name = 'ksqldb'
 
-    def __init__(self, config: Configuration):
-        super().__init__(config)
-        self._config = config
+    def __init__(self):
+        super().__init__()
         self._description = 'KSQLDB on top of Kafka'
         self._image = 'confluentinc/ksqldb-server'
         self._version = '0.28.2'

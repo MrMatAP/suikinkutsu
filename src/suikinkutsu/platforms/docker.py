@@ -29,7 +29,7 @@ from suikinkutsu.exceptions import MurkyWaterException, UnparseableInstanceExcep
 from .platform import Platform
 from suikinkutsu.models import Instance, PortBinding, VolumeBinding
 from suikinkutsu.config import Configuration
-from suikinkutsu.blueprints import Blueprint, BlueprintInstance
+from suikinkutsu.blueprints import Blueprint
 from suikinkutsu.constants import LABEL_BLUEPRINT, LABEL_CREATED_BY
 
 
@@ -91,7 +91,7 @@ class Docker(Platform):
             instance_blueprint = i.get('Config', {}).get('Labels', {}).get(LABEL_BLUEPRINT, 'Unknown')
             try:
                 blueprint_clz = getattr(sys.modules['suikinkutsu.blueprints'], instance_blueprint)
-                instance.blueprint = blueprint_clz(self._config)
+                instance.blueprint = blueprint_clz()
             except AttributeError as ae:
                 raise UnparseableInstanceException(code=500, msg=f'Unable to find corresponding blueprint for '
                                                                  f'"{instance_blueprint}') from ae
@@ -128,8 +128,8 @@ class Docker(Platform):
         # result = self.execute(['container', 'inspect', blueprint.name])
         pass
 
-    def instance_remove(self, blueprint_instance: BlueprintInstance):
-        self.execute(['container', 'stop', blueprint_instance.name])
-        self.execute(['container', 'rm', blueprint_instance.name])
-        for vol in blueprint_instance.volumes:
+    def instance_remove(self, instance: Instance):
+        self.execute(['container', 'stop', instance.name])
+        self.execute(['container', 'rm', instance.name])
+        for vol in instance.volume_bindings:
             self.execute(['volume', 'rm', vol.name])

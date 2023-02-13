@@ -22,7 +22,6 @@
 
 import argparse
 
-from suikinkutsu.config import Configuration
 from suikinkutsu.models import VolumeBinding, PortBinding
 from .blueprint import Blueprint, BlueprintInstance
 
@@ -34,9 +33,8 @@ class KafkaStore(Blueprint):
 
     name = 'kafkastore'
 
-    def __init__(self, config: Configuration):
-        super().__init__(config)
-        self._config = config
+    def __init__(self):
+        super().__init__()
         self._description = 'Schema Registry Store for Apache Kafka'
         self._image = 'confluentinc/cp-schema-registry'
         self._version = '7.3.1'
@@ -71,7 +69,7 @@ class KafkaStore(Blueprint):
                                               help='Instance name')
         kafkastore_remove_parser.set_defaults(cmd=self.kafkastore_remove)
 
-    def kafkastore_create(self, runtime, args: argparse.Namespace):
+    def kafkastore_create(self, runtime: 'Runtime', args: argparse.Namespace):
         blueprint_instance = BlueprintInstance(name=args.name,
                                                platform=self.runtime.platform,
                                                blueprint=self)
@@ -85,6 +83,6 @@ class KafkaStore(Blueprint):
             runtime_secrets[args.name]['connection'] = f'{args.name}:8081'
         self.runtime.secreta = runtime_secrets
 
-    def kafkastore_remove(self, runtime, args: argparse.Namespace):
+    def kafkastore_remove(self, runtime: 'Runtime', args: argparse.Namespace) -> int:
         blueprint_instance = self.runtime.instance_get(name=args.name, blueprint=self)
         self.runtime.instance_remove(blueprint_instance)

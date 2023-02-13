@@ -25,10 +25,9 @@ import secrets as generator
 import psycopg2
 from psycopg2 import sql
 
-from suikinkutsu.config import Configuration
 from suikinkutsu.models import PortBinding, VolumeBinding
 from suikinkutsu.exceptions import MurkyWaterException
-from .blueprint import Blueprint, BlueprintInstance
+from .blueprint import Blueprint
 
 
 class PostgreSQL(Blueprint):
@@ -38,8 +37,8 @@ class PostgreSQL(Blueprint):
 
     name = 'pg'
 
-    def __init__(self, config: Configuration):
-        super().__init__(config)
+    def __init__(self):
+        super().__init__()
         self._description = 'PostgreSQL is a modern relational database'
 
         self._image = 'postgres'
@@ -154,7 +153,7 @@ class PostgreSQL(Blueprint):
                                        help='Dump file to restore from')
         pg_restore_parser.set_defaults(cmd=self.pg_restore)
 
-    def pg_create(self, runtime, args: argparse.Namespace):
+    def pg_create(self, runtime: 'Runtime', args: argparse.Namespace):
         runtime.platform.apply(self)
         runtime.secreta.add(
             args.name,

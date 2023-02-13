@@ -90,7 +90,9 @@ class Platform:
     def platform_list(self, runtime, args: argparse.Namespace) -> int:
         output = OutputEntry(title='Platforms',
                              columns=['Name', 'Description', 'Available'],
-                             msg=[[pf.name, pf.description, str(pf.available)] for name, pf in runtime.platforms.items()])
+                             msg=[
+                                 [pf.name, pf.description, str(pf.available)] for name, pf in runtime.platforms.items()]
+                             )
         runtime.output.print(output)
         return 0
 

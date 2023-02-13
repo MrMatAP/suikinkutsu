@@ -25,7 +25,6 @@ import argparse
 from collections import OrderedDict
 from typing import Optional, List
 
-from suikinkutsu.config import Configuration
 from suikinkutsu.outputs import OutputEntry
 
 
@@ -36,9 +35,7 @@ class Blueprint:
 
     name = 'base'
 
-    def __init__(self, config: Configuration):
-        self._config = config
-
+    def __init__(self):
         self._description = 'An abstract base blueprint'
         self._image = None
         self._version = None
@@ -76,13 +73,13 @@ class Blueprint:
         runtime.output.print(output)
         return 0
 
-    def blueprint_pull(self, runtime, args: argparse.Namespace) -> int:
+    def blueprint_pull(self, runtime: 'Runtime', args: argparse.Namespace) -> int:
         for bp in runtime.blueprints.values():
             runtime.output.info(f'Pulling {bp.image}:{bp.version}')
             runtime.platform.execute(['pull', f'{bp.image}:{bp.version}'])
 
     def blueprints(self):
-        return [bp(self._config) for bp in Blueprint.__subclasses__()]
+        return [bp() for bp in Blueprint.__subclasses__()]
 
     @property
     def description(self):
