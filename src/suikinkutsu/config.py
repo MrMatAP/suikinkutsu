@@ -29,6 +29,7 @@ import collections
 import pydantic
 
 import suikinkutsu.constants
+from suikinkutsu.behaviours import CommandLineAware
 from suikinkutsu.outputs import OutputEntry
 
 
@@ -139,7 +140,7 @@ class ConfigurableItem(object):
         return str(self._value)
 
 
-class Configuration(object):
+class Configuration(CommandLineAware):
     """
     Configuration
     """

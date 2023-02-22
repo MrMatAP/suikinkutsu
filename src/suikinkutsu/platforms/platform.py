@@ -27,13 +27,13 @@ import pathlib
 import subprocess
 import argparse
 
-from suikinkutsu import MurkyWaterException
 from suikinkutsu.config import Configuration
 from suikinkutsu.blueprints import Blueprint, BlueprintInstance
 from suikinkutsu.outputs import OutputEntry
+from suikinkutsu.behaviours import CommandLineAware, CommandExecutor
 
 
-class Platform:
+class Platform(CommandLineAware, CommandExecutor):
     """
     A platform to host blueprints on
     """
@@ -65,12 +65,6 @@ class Platform:
         return {self.name: self} if self.available else {}
 
     def cli_prepare(self, parser, subparsers) -> None:
-        """
-        Hook to declare CLI arguments
-        Args:
-            parser: The ArgumentParser to attach top-level CLI arguments to
-            subparsers: The subparser to attached subcommands to
-        """
         platform_parser = subparsers.add_parser(name='platform', help='Platform Commands')
         platform_subparser = platform_parser.add_subparsers()
         platform_list_parser = platform_subparser.add_parser('list', help='List platforms')
@@ -78,14 +72,6 @@ class Platform:
 
         platform_instances_parser = platform_subparser.add_parser('instances', help='List instances')
         platform_instances_parser.set_defaults(cmd=self.platform_instances)
-
-    def cli_assess(self, args: argparse.Namespace) -> None:
-        """
-        Hook to parse CLI arguments
-        Args:
-            args: The namespace containing the parsed CLI arguments
-        """
-        pass
 
     def platform_list(self, runtime, args: argparse.Namespace) -> int:
         output = OutputEntry(title='Platforms',
@@ -135,6 +121,9 @@ class Platform:
     def instance_create(self, instance: BlueprintInstance):
         pass
 
+    def execute(self, args: typing.List[str]) -> subprocess.CompletedProcess:
+        return self._execute(self._executable, args)
+
 
     # @abc.abstractmethod
     # def instance_create(self, blueprint_instance: BlueprintInstance):
@@ -152,28 +141,4 @@ class Platform:
     # def instance_remove(self, blueprint_instance: BlueprintInstance):
     #     pass
 
-    def execute(self, args: typing.List[str]) -> subprocess.CompletedProcess:
-        """
-        Execute the platform command with the provided parameters
-        Args:
-            args: Parameters to the executable
 
-        Returns:
-            The completed process output from the subprocess module
-
-        Raises:
-            MurkyWaterException when the platform is not unavailable, the platform executable cannot be found or
-            the executable did not return with a successful exit code
-        """
-        if not self._available and self._available is not None:
-            raise MurkyWaterException(msg='Platform is not available')
-        if not self.executable:
-            raise MurkyWaterException(msg=f'Unable to find {self.executable_name} on your path')
-        try:
-            args.insert(0, str(self.executable))
-            return subprocess.run(args=args,
-                                  capture_output=True,
-                                  check=True,
-                                  encoding='UTF-8')
-        except subprocess.CalledProcessError as cpe:
-            raise MurkyWaterException(code=cpe.returncode, msg=cpe.output) from cpe

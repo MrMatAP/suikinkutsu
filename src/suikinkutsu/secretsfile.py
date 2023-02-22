@@ -27,9 +27,10 @@ import json
 
 from suikinkutsu.config import Configuration
 from suikinkutsu.outputs import OutputEntry
+from suikinkutsu.behaviours import CommandLineIntegration
 
 
-class SecretsFile:
+class SecretsFile(CommandLineIntegration):
     """
     Secrets File Manager
     """
@@ -62,9 +63,6 @@ class SecretsFile:
                                            required=True,
                                            help='The secret key to remove')
         secrets_remove_parser.set_default(cmd=self.secrets_remove)
-
-    def cli_assess(self, args: argparse.Namespace):
-        pass
 
     def secrets_list(self, runtime, args: argparse.Namespace):
         output = OutputEntry(title='Secrets',

@@ -28,9 +28,10 @@ from suikinkutsu.blueprints import Blueprint, BlueprintInstance
 from suikinkutsu.platforms import Platform
 from suikinkutsu.config import Configuration
 from suikinkutsu.secretsfile import SecretsFile
+from suikinkutsu.behaviours import CommandLineAware
 
 
-class Runtime:
+class Runtime(CommandLineAware):
     """
     The runtime object holds all configured actor implementations together
     """
@@ -54,9 +55,6 @@ class Runtime:
             self._blueprints[blueprint.name] = blueprint(self._config)
 
         self._instances = {}
-
-    def cli_prepare(self, parser, subparsers):
-        pass
 
     def cli_assess(self, args: argparse.Namespace):
         if self._config.output.value not in self._outputs:

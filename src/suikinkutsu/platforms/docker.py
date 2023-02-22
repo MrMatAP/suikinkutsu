@@ -102,6 +102,16 @@ class Docker(Platform):
             instances.append(instance)
         return instances
 
+    def instance_show(self, name: str, blueprint: typing.Optional[Blueprint] = None):
+        # result = self.execute(['container', 'inspect', blueprint.name])
+        pass
+
+    def instance_remove(self, instance: Instance):
+        self.execute(['container', 'stop', instance.name])
+        self.execute(['container', 'rm', instance.name])
+        for vol in instance.volume_bindings:
+            self.execute(['volume', 'rm', vol.name])
+
     @property
     def executable_name(self) -> str:
         return self._executable_name
@@ -123,13 +133,3 @@ class Docker(Platform):
         except MurkyWaterException:
             self._available = False
         return self._available
-
-    def instance_show(self, name: str, blueprint: typing.Optional[Blueprint] = None):
-        # result = self.execute(['container', 'inspect', blueprint.name])
-        pass
-
-    def instance_remove(self, instance: Instance):
-        self.execute(['container', 'stop', instance.name])
-        self.execute(['container', 'rm', instance.name])
-        for vol in instance.volume_bindings:
-            self.execute(['volume', 'rm', vol.name])

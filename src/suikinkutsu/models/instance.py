@@ -1,6 +1,6 @@
 #  MIT License
 #
-#  Copyright (c) 2022 Mathieu Imfeld
+#  Copyright (c) 2023 Mathieu Imfeld
 #
 #  Permission is hereby granted, free of charge, to any person obtaining a copy
 #  of this software and associated documentation files (the "Software"), to deal
@@ -19,85 +19,10 @@
 #  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 #  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 #  SOFTWARE.
-
 import typing
-import re
 
 from suikinkutsu.blueprints import Blueprint
-from suikinkutsu.exceptions import UnparseableInstanceException
-
-
-class PortBinding(object):
-    """
-    A Port Binding
-    """
-
-    def __init__(self,
-                 host_port: int,
-                 container_port: int,
-                 host_ip: typing.Optional[str] = '0.0.0.0',
-                 protocol: typing.Optional[str] = 'tcp'):
-        self._host_port = host_port
-        self._container_port = container_port
-        self._host_ip = host_ip
-        self._protocol = protocol
-
-    @property
-    def host_port(self) -> int:
-        return self._host_port
-
-    @property
-    def container_port(self) -> int:
-        return self._container_port
-
-    @property
-    def host_ip(self) -> str:
-        return self._host_ip
-
-    @property
-    def protocol(self) -> str:
-        return self._protocol
-
-    @classmethod
-    def from_mapping(cls, container: str, host: typing.List) -> 'PortBinding':
-        c = re.fullmatch(r'(?P<port>\d+)(/(?P<protocol>\w+))?', container)
-        if c is None:
-            raise UnparseableInstanceException(code=500, msg=f'Instance port container mapping "{container}"'
-                                                             f' is unparseable')
-        if len(host) != 1 or 'HostIp' not in host[0] or 'HostPort' not in host[0]:
-            raise UnparseableInstanceException(code=500, msg='Instance port host mapping is unparseable')
-        return cls(container_port=c.group('port'),
-                   host_ip=host[0].get('HostIp'),
-                   host_port=host[0].get('HostPort'),
-                   protocol=c.group('protocol'))
-
-    def to_mapping(self) -> str:
-        return f'{self.host_ip}:{self.container_port}:{self.host_port}/{self.protocol}'
-
-    def __repr__(self):
-        return f'PortBinding(host_port={self.host_port},container_port={self.container_port},' \
-               f'host_ip={self.host_ip},protocol={self.protocol})'
-
-
-class VolumeBinding(object):
-    """
-    A storage volume binding
-    """
-
-    def __init__(self, name: str, mount_point: str):
-        self._name = name
-        self._mount_point = mount_point
-
-    @property
-    def name(self):
-        return self._name
-
-    @property
-    def mount_point(self):
-        return self._mount_point
-
-    def __repr__(self):
-        return f'Volume(name={self.name},mount_point={self.mount_point})'
+from suikinkutsu.models import PortBinding, VolumeBinding
 
 
 class Instance(object):

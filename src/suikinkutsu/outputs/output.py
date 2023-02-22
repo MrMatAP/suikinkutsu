@@ -20,11 +20,12 @@
 #  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 #  SOFTWARE.
 
-import abc
 import dataclasses
 import typing
 import enum
 import argparse
+
+from suikinkutsu.behaviours import CommandLineAware
 
 
 class OutputSeverity(enum.Enum):
@@ -69,7 +70,7 @@ class OutputEntry:
         return d
 
 
-class Output(abc.ABC):
+class Output(CommandLineAware):
     """
     Output base class
     """
@@ -81,24 +82,10 @@ class Output(abc.ABC):
         self._description = 'Abstract base for an output'
 
     def cli_prepare(self, parser, subparsers) -> None:
-        """
-        Hook to declare CLI arguments
-        Args:
-            parser: The ArgumentParser to attach top-level CLI arguments to
-            subparsers: The subparser to attached subcommands to
-        """
         output_parser = subparsers.add_parser(name='output', help='Output Commands')
         output_subparser = output_parser.add_subparsers()
         output_list_parser = output_subparser.add_parser('list', help='List Outputs')
         output_list_parser.set_defaults(cmd=self.output_list)
-
-    def cli_assess(self, args: argparse.Namespace) -> None:
-        """
-        Hook to parse CLI arguments
-        Args:
-            args: The namespace containing the parsed CLI arguments
-        """
-        pass
 
     def output_list(self, runtime, args: argparse.Namespace) -> int:
         output = OutputEntry(title='Outputs',

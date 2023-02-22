@@ -25,10 +25,11 @@ import argparse
 from collections import OrderedDict
 from typing import Optional, List
 
+from suikinkutsu.behaviours import CommandLineAware
 from suikinkutsu.outputs import OutputEntry
 
 
-class Blueprint:
+class Blueprint(CommandLineAware):
     """
     Blueprint base class
     """
@@ -45,26 +46,12 @@ class Blueprint:
         self._depends_on = []
 
     def cli_prepare(self, parser, subparsers) -> None:
-        """
-        Hook to declare CLI arguments
-        Args:
-            parser: The ArgumentParser to attach top-level CLI arguments to
-            subparsers: The subparser to attach subcommands to
-        """
         blueprint_parser = subparsers.add_parser(name='blueprint', help='Blueprint commands')
         blueprint_subparsers = blueprint_parser.add_subparsers()
         blueprint_list_parser = blueprint_subparsers.add_parser('list', help='List available blueprints')
         blueprint_list_parser.set_defaults(cmd=self.blueprint_list)
         blueprint_pull_parser = blueprint_subparsers.add_parser('pull', help='Pull all blueprint container images')
         blueprint_pull_parser.set_defaults(cmd=self.blueprint_pull)
-
-    def cli_assess(self, args: argparse.Namespace) -> None:
-        """
-        Hook to parse CLI arguments
-        Args:
-            args: The namespace containing the parsed CLI arguments
-        """
-        pass
 
     def blueprint_list(self, runtime, args: argparse.Namespace) -> int:
         output = OutputEntry(title='Blueprints',
@@ -132,7 +119,7 @@ class BlueprintVolume:
         return self._destination
 
 
-class BlueprintInstance():
+class BlueprintInstance:
     """
     A blueprint instance
     """
@@ -193,30 +180,3 @@ class BlueprintInstance():
             'blueprint': self.blueprint.name if self.blueprint else 'Unknown',
             'running': self.running
         })
-
-
-class BlueprintInstanceList(list):
-    """
-    A list of blueprint instances
-    """
-
-    def __init__(self, blueprint_instances: List[Blueprint] = None):
-        super().__init__()
-        self._blueprint_instances = blueprint_instances or []
-
-    def display_dict(self) -> OrderedDict:
-        instances = OrderedDict({
-            'id': [],
-            'name': [],
-            'platform': [],
-            'blueprint': [],
-            'running': []
-        })
-        for blueprint_instance in self:
-            instances['id'].append(blueprint_instance.instance_id)
-            instances['name'].append(blueprint_instance.name)
-            instances['platform'].append(blueprint_instance.platform.name if blueprint_instance.platform else 'Unknown')
-            instances['blueprint'].append(
-                blueprint_instance.blueprint.name if blueprint_instance.blueprint else 'Unknown')
-            instances['running'].append(blueprint_instance.running)
-        return instances
