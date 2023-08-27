@@ -26,9 +26,9 @@ classifiers = [
 requires-python = ">=3.11"
 dependencies = [
     "rich~=13.5.2",             # MIT
-    "pydantic~=2.0.2",          # MIT
+    "pydantic~=2.3.0",          # MIT
     "pyyaml~=6.0",              # MIT
-    "psycopg2-binary~=2.9.5"    # LGPL with exceptions
+    "psycopg2-binary~=2.9.7"    # LGPL with exceptions
 ]
 dynamic = ["version"]
 
