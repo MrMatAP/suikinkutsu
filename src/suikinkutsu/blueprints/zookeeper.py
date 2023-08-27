@@ -70,6 +70,7 @@ class Zookeeper(Blueprint):
                                       required=True,
                                       help='Instance name')
 
+    # pylint: disable=unused-argument
     def zookeeper_create(self, runtime, args: argparse.Namespace):
         blueprint_instance = BlueprintInstance(name=args.name,
                                                platform=runtime.platform,
@@ -84,6 +85,7 @@ class Zookeeper(Blueprint):
             runtime_secrets[args.name]['connection'] = f'{args.name}:{self.environment.get("ZOOKEEPER_CLIENT_PORT")}'
         self.runtime.secreta = runtime_secrets
 
+    # pylint: disable=unused-argument
     def zookeeper_remove(self, runtime, args: argparse.Namespace):
         blueprint_instance = self.runtime.instance_get(name=args.name, blueprint=self)
         self.runtime.instance_remove(blueprint_instance)

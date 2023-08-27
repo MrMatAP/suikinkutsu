@@ -76,6 +76,7 @@ class Keycloak(Blueprint):
                                       required=False,
                                       help='Instance name')
 
+    # pylint: disable=unused-argument
     def kc_create(self, runtime, args: argparse.Namespace):
         blueprint_instance = BlueprintInstance(name=args.name,
                                                platform=self.runtime.platform,
@@ -94,6 +95,7 @@ class Keycloak(Blueprint):
             runtime_secrets[args.name]['admin'] = self.environment.get('KEYCLOAK_PASSWORD')
         self.runtime.secreta = runtime_secrets
 
+    # pylint: disable=unused-argument
     def kc_remove(self, runtime, args: argparse.Namespace):
         blueprint_instance = self.runtime.instance_get(name=args.name, blueprint=self)
         self.runtime.instance_remove(blueprint_instance)

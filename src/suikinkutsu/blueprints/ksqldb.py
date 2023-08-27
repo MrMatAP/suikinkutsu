@@ -68,6 +68,7 @@ class KSQLDB(Blueprint):
                                           help='Instance name')
         ksqldb_remove_parser.set_defaults(cmd=self.ksqldb_remove)
 
+    # pylint: disable=unused-argument
     def ksqldb_create(self, runtime, args: argparse.Namespace):
         blueprint_instance = BlueprintInstance(name=args.name,
                                                platform=self.runtime.platform,
@@ -82,6 +83,7 @@ class KSQLDB(Blueprint):
             runtime_secrets[args.name]['connection'] = f'{args.name}:8088'
         self.runtime.secreta = runtime_secrets
 
+    # pylint: disable=unused-argument
     def ksqldb_remove(self, runtime, args: argparse.Namespace):
         blueprint_instance = self.runtime.instance_get(name=args.name, blueprint=self)
         self.runtime.instance_remove(blueprint_instance)

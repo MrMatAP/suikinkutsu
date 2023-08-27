@@ -78,6 +78,7 @@ class Nerdctl(Platform):
     #
     # nerdctl features a --mode=native which in some ways may be more detailed but for what we parse it's currently
     # easier to use the same method as Docker. Particularly the mounts are easier to parse.
+    # pylint: disable=unused-argument
     def instance_list(self, blueprint: typing.Optional[Blueprint] = None) -> typing.List[BlueprintInstance]:
         platform_instances: typing.List[BlueprintInstance] = []
         if not self.available:

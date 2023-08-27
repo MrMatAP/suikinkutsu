@@ -33,6 +33,7 @@ class Project(object):
     def __init__(self, config: Configuration):
         self._config = config
 
+    # pylint: disable=unused-argument
     def cli_prepare(self, parser, subparser):
         project_parser = subparser.add_parser(name='project', help='Project Commands')
         project_subparser = project_parser.add_subparsers()
@@ -42,6 +43,7 @@ class Project(object):
     def cli_assess(self, args: argparse.Namespace):
         pass
 
+    # pylint: disable=unused-argument
     def project_show(self, runtime, args: argparse.Namespace) -> int:
         output = OutputEntry(title='Project',
                              columns=['Key', 'Value'],

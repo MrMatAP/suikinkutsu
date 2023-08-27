@@ -53,6 +53,7 @@ class Blueprint(CommandLineAware):
         blueprint_pull_parser = blueprint_subparsers.add_parser('pull', help='Pull all blueprint container images')
         blueprint_pull_parser.set_defaults(cmd=self.blueprint_pull)
 
+    # pylint: disable=unused-argument
     def blueprint_list(self, runtime, args: argparse.Namespace) -> int:
         output = OutputEntry(title='Blueprints',
                              columns=['Name', 'Description'],
@@ -60,6 +61,7 @@ class Blueprint(CommandLineAware):
         runtime.output.print(output)
         return 0
 
+    # pylint: disable=unused-argument
     def blueprint_pull(self, runtime: 'Runtime', args: argparse.Namespace) -> int:
         for bp in runtime.blueprints.values():
             runtime.output.info(f'Pulling {bp.image}:{bp.version}')

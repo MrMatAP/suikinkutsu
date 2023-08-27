@@ -91,6 +91,7 @@ class Kubectl(Platform):
     def instance_create(self, instance: BlueprintInstance):
         pass
 
+    # pylint: disable=unused-argument
     def instance_list(self, blueprint: typing.Optional[Blueprint] = None) -> typing.List[BlueprintInstance]:
         # TODO
         return []

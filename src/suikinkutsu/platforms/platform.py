@@ -73,6 +73,7 @@ class Platform(CommandLineAware, CommandExecutor):
         platform_instances_parser = platform_subparser.add_parser('instances', help='List instances')
         platform_instances_parser.set_defaults(cmd=self.platform_instances)
 
+    # pylint: disable=unused-argument
     def platform_list(self, runtime, args: argparse.Namespace) -> int:
         output = OutputEntry(title='Platforms',
                              columns=['Name', 'Description', 'Available'],
@@ -82,6 +83,7 @@ class Platform(CommandLineAware, CommandExecutor):
         runtime.output.print(output)
         return 0
 
+    # pylint: disable=unused-argument
     def platform_instances(self, runtime, args: argparse.Namespace) -> int:
         self.instances()
         return 0

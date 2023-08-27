@@ -20,6 +20,6 @@
 #  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 #  SOFTWARE.
 
-from .instance import Instance
 from .port_binding import PortBinding
 from .volume_binding import VolumeBinding
+from .instance import Instance

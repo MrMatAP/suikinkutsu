@@ -46,10 +46,9 @@ class PostgreSQL(Blueprint):
         self._volume_bindings = [
             VolumeBinding(name='pg_datavol', mount_point='/var/lib/postgresql/data')
         ]
-        self._environment = dict(
-            POSTGRES_DB='localdb',
-            POSTGRES_PASSWORD=generator.token_urlsafe(16),
-            PGDATA='/var/lib/postgresql/data/pgdata')
+        self._environment = {'POSTGRES_DB': 'localdb',
+                             'POSTGRES_PASSWORD': generator.token_urlsafe(16),
+                             'PGDATA': '/var/lib/postgresql/data/pgdata'}
         self._port_bindings = [
             PortBinding(container_port=5432, host_ip='127.0.0.1', host_port=5432, protocol='tcp')
         ]

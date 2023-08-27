@@ -26,7 +26,7 @@ import argparse
 
 from suikinkutsu import __version__, MurkyWaterException
 from suikinkutsu.config import Configuration
-from suikinkutsu.secreta import SecretsFile
+from suikinkutsu.secretsfile import SecretsFile
 from suikinkutsu.outputs import OutputEntry, Output
 from suikinkutsu.blueprints import Blueprint
 from suikinkutsu.platforms import Platform
@@ -34,6 +34,7 @@ from suikinkutsu.project import Project
 from suikinkutsu.runtime import Runtime
 
 
+# pylint: disable=unused-argument
 def instance_list(runtime: Runtime, args: argparse.Namespace) -> int:
     runtime.output.print(OutputEntry(title='Instances',
                                      columns=['Id', 'Name', 'Platform', 'Blueprint', 'Running', 'Volumes'],
@@ -67,6 +68,7 @@ def cook_up(runtime: Runtime, args: argparse.Namespace) -> int:
         return 1
 
 
+# pylint: disable=unused-argument
 def cook_show(runtime: Runtime, args: argparse.Namespace) -> int:
     try:
         runtime.output.cook_show(runtime)

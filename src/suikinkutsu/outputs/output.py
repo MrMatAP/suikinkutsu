@@ -66,7 +66,11 @@ class OutputEntry:
         Returns:
             a dictionary
         """
-        d = dict(msg=self.msg, code=self.code, severity=str(self.severity), title=self.title, columns=self.columns)
+        d = {'msg': self.msg,
+             'code': self.code,
+             'severity': str(self.severity),
+             'title': self.title,
+             'columns': self.columns}
         return d
 
 
@@ -87,6 +91,7 @@ class Output(CommandLineAware):
         output_list_parser = output_subparser.add_parser('list', help='List Outputs')
         output_list_parser.set_defaults(cmd=self.output_list)
 
+    # pylint: disable=unused-argument
     def output_list(self, runtime, args: argparse.Namespace) -> int:
         output = OutputEntry(title='Outputs',
                              columns=['Name', 'Description'],

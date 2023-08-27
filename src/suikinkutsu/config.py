@@ -185,7 +185,7 @@ class Configuration(CommandLineAware):
         if self._config_file.source == Source.ENVIRONMENT:
             self.config_load()
 
-    def cli_prepare(self, parser, subparser):
+    def cli_prepare(self, parser, subparsers):
         parser.add_argument('-c',
                             dest=suikinkutsu.constants.CLI_CONFIG_FILE,
                             default=self.config_file.value,
@@ -219,7 +219,7 @@ class Configuration(CommandLineAware):
                             required=False,
                             help='Override the default platform for this invocation')
 
-        config_parser = subparser.add_parser(name='config', help='Configuration Commands')
+        config_parser = subparsers.add_parser(name='config', help='Configuration Commands')
         config_subparser = config_parser.add_subparsers()
         config_show_parser = config_subparser.add_parser(name='show', help='Show current configuration')
         config_show_parser.set_defaults(cmd=self.config_show)
@@ -256,6 +256,7 @@ class Configuration(CommandLineAware):
         self._output.update_from_file(raw_config.output)
         self._platform.update_from_file(raw_config.platform)
 
+    # pylint: disable=unused-argument
     def config_show(self, runtime, args: argparse.Namespace) -> int:
         output = OutputEntry(title='Configuration',
                              columns=['Key', 'Value', 'Source'],
@@ -270,6 +271,7 @@ class Configuration(CommandLineAware):
         runtime.output.print(output)
         return 0
 
+    # pylint: disable=unused-argument
     def config_set(self, runtime, args: argparse.Namespace) -> int:
         # runtime.config_dir = args.set_config_dir
         # runtime.config_output = args.set_config_output

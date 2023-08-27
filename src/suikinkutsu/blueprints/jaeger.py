@@ -42,10 +42,7 @@ class Jaeger(Blueprint):
         self._volume_bindings = [
             VolumeBinding(name='jaeger_tmpvol', mount_point='/tmp')
         ]
-        self._environment = dict(
-            COLLECTOR_ZIPKIN_HOST_PORT=':9411',
-            COLLECTOR_OLTP_ENABLED='true'
-        )
+        self._environment = {'COLLECTOR_ZIPKIN_HOST_PORT': ':9411', 'COLLECTOR_OLTP_ENABLED': 'true'}
         self._port_bindings = [
             PortBinding(container_port=6831, host_port=6831, host_ip='127.0.0.1', protocol='udp'),
             PortBinding(container_port=6832, host_port=6832, host_ip='127.0.0.1', protocol='udp'),
@@ -90,6 +87,7 @@ class Jaeger(Blueprint):
             runtime_secrets[args.name]['connection'] = f'{args.name}:16686'
         self.runtime.secreta = runtime_secrets
 
+    # pylint: disable=unused-argument
     def jaeger_remove(self, runtime: 'Runtime', args: argparse.Namespace) -> int:
         blueprint_instance = self.runtime.instance_get(name=args.name, blueprint=self)
         self.runtime.instance_remove(blueprint_instance)

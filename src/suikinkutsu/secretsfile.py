@@ -42,6 +42,7 @@ class SecretsFile(CommandLineIntegration):
         if self._secrets_file.exists():
             self._secrets = json.loads(self._secrets_file.read_text(encoding='UTF-8'))
 
+    # pylint: disable=unused-argument
     def cli_prepare(self, parser, subparsers):
         secrets_parser = subparsers.add_parser(name='secrets', help='Secrets Commands')
         secrets_subparser = secrets_parser.add_subparsers()
@@ -64,6 +65,7 @@ class SecretsFile(CommandLineIntegration):
                                            help='The secret key to remove')
         secrets_remove_parser.set_default(cmd=self.secrets_remove)
 
+    # pylint: disable=unused-argument
     def secrets_list(self, runtime, args: argparse.Namespace):
         output = OutputEntry(title='Secrets',
                              columns=['Instance Name', 'Secret'],
@@ -71,10 +73,12 @@ class SecretsFile(CommandLineIntegration):
         runtime.output.print(output)
         return 0
 
+    # pylint: disable=unused-argument
     def secrets_add(self, runtime, args: argparse.Namespace):
         self.add(args.key, args.value)
         return 0
 
+    # pylint: disable=unused-argument
     def secrets_remove(self, runtime, args: argparse.Namespace):
         self.remove(args.key)
 

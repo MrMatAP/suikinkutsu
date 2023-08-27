@@ -74,6 +74,7 @@ class Kafka(Blueprint):
                                          help='Instance name')
         kafka_remove_parser.set_defaults(cmd=self.kafka_remove)
 
+    # pylint: disable=unused-argument
     def kafka_create(self, runtime: 'Runtime', args: argparse.Namespace) -> int:
         blueprint_instance = BlueprintInstance(name=args.name,
                                                platform=self.runtime.platform,
@@ -88,6 +89,7 @@ class Kafka(Blueprint):
             runtime_secrets[args.name]['connection'] = f'{args.name}:29092'
         self.runtime.secreta = runtime_secrets
 
+    # pylint: disable=unused-argument
     def kafka_remove(self, runtime: 'Runtime', args: argparse.Namespace) -> int:
         blueprint_instance = self.runtime.instance_get(name=args.name, blueprint=self)
         self.runtime.instance_remove(blueprint_instance)
