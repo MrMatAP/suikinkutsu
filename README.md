@@ -1,92 +1,124 @@
-# water
+# Suikinkutsu
 
-A tool for developer efficiency
+A tool for developer efficiency when they are on the road, using container-based infrastructure, because we all cook 
+with water.
 
-## Getting started
+[![Build](https://github.com/MrMatAP/suikinkutsu/actions/workflows/build.yml/badge.svg)](https://github.com/MrMatAP/suikinkutsu/actions/workflows/build.yml)
+[![CodeQL](https://github.com/MrMatAP/suikinkutsu/actions/workflows/codeql.yml/badge.svg)](https://github.com/MrMatAP/suikinkutsu/actions/workflows/codeql.yml)
 
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
+> Before you say something, I know the code in here is not ready. I work on this shortly before or while I'm on the road.
+> Since I have a life and it's something primarily meant to be useful for me, expect long iterations for this to get
+> better... It's nothing at enterprise-grade and likely won't ever be.
 
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
+## Background
 
-## Add your files
+Suikinkutsu has the following goals:
 
-- [ ] [Create](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#create-a-file) or [upload](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#upload-a-file) files
-- [ ] [Add files using the command line](https://docs.gitlab.com/ee/gitlab-basics/add-file.html#add-a-file-using-the-command-line) or push an existing Git repository with the following command:
+* **Provide useful "personal" infrastructure for testing and experimentation.** "Personal" in this context does not 
+  necessarily mean "local" because Suikinkuts should also allow you to spin up personal infrastructure in any cloud or 
+  shared hosting platform available to you, such as a cloud and remote Kubernetes cluster. Suikinkutsu currently focuses 
+  on local Docker and Rancher (using nerdctl) though. There is very early support for abstracting Kubernetes 
+  deployments (it will scan and look for instances it created in clusters looked up in your local `~/.kube/config`, 
+  which is why `sk platform list` may take longer than expected, especially when those clusters are unavailable).
+* **Help with secrets management**. Suikinkutsu will generate secrets and store them in a configurable location outside 
+  your repository whenever you spin up an instance of something that requires them. These secrets can then be picked 
+  up by your testsuite.
+* **Offer simplified, consistent interaction with instances**. I find it inconvenient to spin up a container just for 
+  client 
+  utilities to interact with whatever instances I spun up. You have to learn how to do that when all that you want 
+  is to spin up some account in PostgreSQL to test with or create a Kafka topic. The aim here is to have Suikinkutsu do 
+  this for you (e.g. `sk kafka up; sk kafka topic create -n kafka_instance_name -t topic_name`).
+* **Allow for sharing configurations**. The expected workflow for a developer is to experiment with something using 
+  their own "personal" infrastructure on their feature branch. That developer will eventually want to share her 
+  insights with a buddy. Configuration on what infrastructure is needed (including what accounts and data it should 
+  contain) is meant to be persisted in a `Recipe` within the repository. Such recipes avoid lengthy explanations to 
+  fellow developers what and how to set it up. Recipes are currently still pretty non-functional.
 
+## How to install this
+
+Clone this repository and install the Python package. At this stage you will likely want to install this in a virtual
+environment. You can also install the Python package into your home directory directly (`pip install --user`) to
+avoid having to remember activating the virtual environment before executing `sk`.
+
+```shell
+# Create and activate a virtual environment (optional, but recommended)
+$ python -m virtualenv /path/to/virtualenv/suikinkutsu
+$ . /path/to/virtualenv/suikinkutsu/bin/activate
+
+# Build and install Kaso Mashin
+$ pip install -U /path/to/cloned/sources/dev-requirements.txt
+$ python -m build -n --wheel
+$ pip install ./dist/*.whl
+
+# Validate whether it worked
+$ sk -h
 ```
-cd existing_repo
-git remote add origin https://gitlab.com/mrmatorg/water.git
-git branch -M main
-git push -uf origin main
+
+### How to update this
+
+At this point Suikinkutsu is updated from its sources in git. It will be published in the regular Python Packaging Index
+by the time it reached a bit more maturity.
+
+```shell
+# Navigate to your clone of the Suikinkutsu sources and update
+$ git pull
+
+# Activate the virtual environment in which it is currently installed
+$ . /path/to/virtualenv/suikinkutsu/bin/activate
+
+# Install and update dependencies, then build and install
+$ pip install -U /path/to/cloned/sources/dev-requirements.txt
+$ python -m build -n --wheel
+$ pip install ./dist/*.whl
+
+# Validate whether it worked
+$ sk -h
 ```
 
-## Integrate with your tools
+### Configuration
 
-- [ ] [Set up project integrations](https://gitlab.com/mrmatorg/water/-/settings/integrations)
+It is sometimes confusing why and where-from your tools are configured. Suikinkutsu will therefore tell you whether a 
+configuration is a default, from a config file, the CLI or from an environment variable in `sk config show`. The 
+philosophy on precendence is as follows, from lowest to highest:
 
-## Collaborate with your team
+* Defaults
+* An entry in the config file overrides the default
+* An environment variable overides an entry in the config file
+* A command line parameter overrides an environment variable
 
-- [ ] [Invite team members and collaborators](https://docs.gitlab.com/ee/user/project/members/)
-- [ ] [Create a new merge request](https://docs.gitlab.com/ee/user/project/merge_requests/creating_merge_requests.html)
-- [ ] [Automatically close issues from merge requests](https://docs.gitlab.com/ee/user/project/issues/managing_issues.html#closing-issues-automatically)
-- [ ] [Enable merge request approvals](https://docs.gitlab.com/ee/user/project/merge_requests/approvals/)
-- [ ] [Automatically merge when pipeline succeeds](https://docs.gitlab.com/ee/user/project/merge_requests/merge_when_pipeline_succeeds.html)
+The reason for this philosophy is based on the effort required to establish the configuration. It is considered to 
+require more effort to set an environment variable than to override it for a particular run of the tool on the CLI.
 
-## Test and Deploy
+>*NOTE*: Suikinkutsu used to be called 'Water', but that name was taken on Pypi and we haven't gotten around to fix
+> the config system yet.
 
-Use the built-in continuous integration in GitLab.
+| Configuration | Environment Variable   | CLI Argument | Default                           | Description                                                                                                           |
+|---------------|------------------------|--------------|-----------------------------------|-----------------------------------------------------------------------------------------------------------------------|
+| config_file   | WATER_CONFIG_FILE      | -c           | ~/.water                          | Overall configuration file for water itself                                                                           |
+| config_dir    | WATER_CONFIG_DIR       | -d           | ~/etc                             | Base path into which app-specific config files (with secrets) are written                                             |
+| output        | WATER_DEFAULT_OUTPUT   | -o           | human                             | Output format. One of 'human', 'json' or 'yaml'                                                                       |
+| platform      | WATER_DEFAULT_PLATFORM | -p           | nerdctl                           | Default platform in which instances are created. These are auto-discovered and even the default may not be available. |
+| recipe_file   | WATER_RECIPE           | TODO         | <PROJECT>/Recipe                  | File (within repository) in which the overall recipe for instances is stored (currently non-functional)               |
+| secrets_file  | WATER_SECRETS_FILE     | -s           | <WATER_CONFIG_DIR>/<PROJECT>.json | App-specific config file (with secrets)                                                                               |
 
-- [ ] [Get started with GitLab CI/CD](https://docs.gitlab.com/ee/ci/quick_start/index.html)
-- [ ] [Analyze your code for known vulnerabilities with Static Application Security Testing(SAST)](https://docs.gitlab.com/ee/user/application_security/sast/)
-- [ ] [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/ee/topics/autodevops/requirements.html)
-- [ ] [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/ee/user/clusters/agent/)
-- [ ] [Set up protected environments](https://docs.gitlab.com/ee/ci/environments/protected_environments.html)
+## How to use this
 
-***
+Suikinkutsu is meant to have a similar concept to invocation as the Azure CLI has.
 
-# Editing this README
+* Show configuration and where it comes from: `sk config show`
+* Show available blueprints: `sk blueprint list`
+* Show available platforms: `sk platform list`
+* Show instances that were created: `sk instance list`
+* Spin up a PostgreSQL instance with the default name ('pg'): `sk pg create`
+* Spin up a named (second) PostgreSQL instance: `sk pg up -n test`
+* Get help on PostgreSQL customisation commands: `sk pg -h`
+* Get help on PostgreSQL role commands: `sk pg role -h`
+* Get help on the PostgreSQL role creation command: `sk pg role create -h`
+* Create a PostgreSQL role: `sk pg role create -n pg -r testrole -p foobar --create-schema`
 
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!).  Thank you to [makeareadme.com](https://www.makeareadme.com/) for this template.
 
-## Suggestions for a good README
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
+## Known issues & Limitations
 
-## Name
-Choose a self-explaining name for your project.
-
-## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
-
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
-
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
-
-## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
-
-## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
-
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
-
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
-
-## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
-
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
-
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
-
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
-
-## License
-For open source projects, say how it is licensed.
-
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+* If you get encoding errors on Windows while testing the outputs in PyCharm but the tests succeed in the normal 
+  Terminal console then check what the default encoding is for the PyCharm console. Chances are that it's not set to 
+  UTF-8.

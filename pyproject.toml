@@ -1,0 +1,57 @@
+[build-system]
+requires = [
+    'setuptools~=68.1.2',
+    'wheel~=0.41.2'
+]
+build-backend = 'setuptools.build_meta'
+
+[project]
+name = "suikinkutsu"
+description = "A tool for developer efficiency when they are on the road, using container-based infrastructure, because we all cook with water."
+urls = { "Sources" = "https://github.com/MrMatAP/suikinkutsu" }
+keywords = ["containerisation", "utility", "development"]
+readme = "README.md"
+license = { text = "MIT" }
+authors = [
+    { name = "Mathieu Imfeld", email = "imfeldma+9jqerw@gmail.com" }
+]
+maintainers = [
+    { name = "Mathieu Imfeld", email = "imfeldma+9jqerw@gmail.com" }
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "License :: OSI Approved :: MIT",
+    "Programming Language :: Python :: 3.11"
+]
+requires-python = ">=3.11"
+dependencies = [
+    "rich~=13.5.2",             # MIT
+    "pydantic~=2.3.0",          # MIT
+    "pyyaml~=6.0",              # MIT
+    "psycopg2-binary~=2.9.7"    # LGPL with exceptions
+]
+dynamic = ["version"]
+
+[tool.setuptools.dynamic]
+version = { attr = "ci.version" }
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["suikinkutsu*"]
+namespaces = true
+
+[project.scripts]
+sk = "suikinkutsu.cli:main"
+
+#
+# If you are debugging your tests using PyCharm then comment out the coverage options
+# in addopts
+[tool.pytest.ini_options]
+minversion = "6.0"
+addopts = "--cov=suikinkutsu --cov-report=term --cov-report=xml:build/coverage.xml --junit-xml=build/junit.xml --capture=tee-sys"
+testpaths = ["tests"]
+junit_family = "xunit2"
+log_cli = 1
+log_cli_level = "INFO"
+log_cli_format = "%(asctime)s [%(levelname)8s] %(message)s (%(filename)s:%(lineno)s)"
+log_cli_date_format = "%Y-%m-%d %H:%M:%S"

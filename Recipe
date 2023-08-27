@@ -1,0 +1,7 @@
+blueprints:
+    pg:
+        kind: postgres
+    kc:
+        kind: keycloak
+        depends_on:
+        - pg
