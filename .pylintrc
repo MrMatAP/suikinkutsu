@@ -90,7 +90,6 @@ disable=abstract-method,
         map-builtin-not-iterating,
         misplaced-comparison-constant,
         missing-function-docstring,
-        missing-module-docstring,
         metaclass-assignment,
         next-method-called,
         next-method-defined,
@@ -147,6 +146,7 @@ disable=abstract-method,
         wrong-import-order,
         xrange-builtin,
         zip-builtin-not-iterating,
+        missing-module-docstring
 
 
 [REPORTS]
@@ -425,6 +425,6 @@ valid-metaclass-classmethod-first-arg=mcs
 
 # Exceptions that will emit a warning when being caught. Defaults to
 # "Exception"
-overgeneral-exceptions=StandardError,
-                       Exception,
-                       BaseException
+#overgeneral-exceptions=StandardError,
+#                       Exception,
+#                       BaseException

@@ -13,7 +13,7 @@ env:
 
 #
 # Establish when the workflow is run
-# We do build on every push except when we push onto main (which we ought to be subject to branch protection)
+# We do build on every push except when we push onto main (which is subject to branch protection)
 # We do build whenever a PR onto main is closed (see on) and the code is actually merged (see release job if)
 # Why is that okay?
 # Since we're making a PR, we know from the previous workflow run on push that the repo is okay and the PR
@@ -60,17 +60,17 @@ jobs:
         python-version: ${{ env.PYTHON_VERSION }}
 
     - name: Establish a cache for dependencies
-      uses: actions/cache@v2
+      uses: actions/cache@v3
       with:
         path: ~/.cache/pip
         key: ${{ runner.os }}
 
     - name: Build
       run: |
-        pip install --user -r requirements.txt
-        pylint ${GITHUB_WORKSPACE}/src/suikinkutsu
+        pip install --user -r dev-requirements.txt
+        pylint --rcfile ${GITHUB_WORKSPACE}/.pylintrc ${GITHUB_WORKSPACE}/src/suikinkutsu --exit-zero
+        python -m build --wheel -n
         PYTHONPATH=${GITHUB_WORKSPACE}/src python -m pytest
-        python -m build --wheel -n  
 
     - name: Upload test results
       uses: actions/upload-artifact@v2

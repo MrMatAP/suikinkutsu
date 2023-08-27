@@ -1,10 +1,7 @@
 [build-system]
 requires = [
-    'setuptools>=65.6.0',
-    'wheel~=0.38.4',
-    'pylint~=2.15.5',       # MIT
-    'pytest~=7.2.0',        # GPL-2.0-or-later
-    'pytest-cov~=4.0.0'     # MIT
+    'setuptools~=68.1.2',
+    'wheel~=0.36.0'
 ]
 build-backend = 'setuptools.build_meta'
 
@@ -12,7 +9,7 @@ build-backend = 'setuptools.build_meta'
 name = "suikinkutsu"
 description = "A tool for developer efficiency when they are on the road, using container-based infrastructure, because we all cook with water."
 urls = { "Sources" = "https://github.com/MrMatAP/suikinkutsu" }
-keywords = ["utility", "development"]
+keywords = ["containerisation", "utility", "development"]
 readme = "README.md"
 license = { text = "MIT" }
 authors = [
@@ -27,13 +24,13 @@ classifiers = [
     "Programming Language :: Python :: 3.11"
 ]
 requires-python = ">=3.11"
-dynamic = ["version"]
 dependencies = [
-    "rich~=12.6.0",             # MIT
-    "pydantic~=1.10.2",         # MIT
-    "pyyaml>=6.0",              # MIT
+    "rich~=13.5.2",             # MIT
+    "pydantic~=2.0.2",          # MIT
+    "pyyaml~=6.0",              # MIT
     "psycopg2-binary~=2.9.5"    # LGPL with exceptions
 ]
+dynamic = ["version"]
 
 [tool.setuptools.dynamic]
 version = { attr = "ci.version" }
@@ -41,7 +38,7 @@ version = { attr = "ci.version" }
 [tool.setuptools.packages.find]
 where = ["src"]
 include = ["suikinkutsu*"]
-namespaces = false
+namespaces = true
 
 [project.scripts]
 water = "suikinkutsu.cli:main"
@@ -50,8 +47,9 @@ water = "suikinkutsu.cli:main"
 # If you are debugging your tests using PyCharm then comment out the coverage options
 # in addopts
 [tool.pytest.ini_options]
+minversion = "6.0"
+addopts = "--cov=suikinkutsu --cov-report=term --cov-report=xml:build/coverage.xml --junit-xml=build/junit.xml --capture=tee-sys"
 testpaths = ["tests"]
-#addopts = "--cov=suikinkutsu --cov-report=term --cov-report=xml:build/coverage.xml --junit-xml=build/junit.xml --capture=tee-sys"
 junit_family = "xunit2"
 log_cli = 1
 log_cli_level = "INFO"
