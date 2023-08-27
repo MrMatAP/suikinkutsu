@@ -41,7 +41,7 @@ include = ["suikinkutsu*"]
 namespaces = true
 
 [project.scripts]
-water = "suikinkutsu.cli:main"
+sk = "suikinkutsu.cli:main"
 
 #
 # If you are debugging your tests using PyCharm then comment out the coverage options
