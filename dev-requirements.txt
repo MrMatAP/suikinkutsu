@@ -16,4 +16,4 @@ pytest-cov~=4.1.0        # MIT
 rich~=13.5.3             # MIT
 pydantic~=2.3.0          # MIT
 pyyaml~=6.0              # MIT
-psycopg2-binary~=2.9.7   # LGPL with exceptions
+psycopg2-binary~=2.9.8   # LGPL with exceptions
