@@ -1,6 +1,6 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="water jaeger create" type="PythonConfigurationType" factoryName="Python" folderName="Instances">
-    <module name="water" />
+    <module name="suikinkutsu" />
     <option name="INTERPRETER_OPTIONS" value="" />
     <option name="PARENT_ENVS" value="true" />
     <envs>
