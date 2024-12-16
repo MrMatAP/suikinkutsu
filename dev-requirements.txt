@@ -5,7 +5,7 @@
 # Build/Test requirements
 
 setuptools~=68.2.2
-build~=1.0.3             # MIT
+build~=1.2.2             # MIT
 wheel~=0.41.2            # MIT
 pylint~=3.0.3           # MIT
 pytest~=7.4.2            # GPL-2.0-or-later
